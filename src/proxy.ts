@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { missingPublicEnv, publicEnv } from '@/lib/env';
+import { isWebsiteHost } from '@/lib/site-config';
 
 /**
  * Request gate for the whole application. Runs before every matched route.
@@ -57,8 +58,75 @@ function redirect(request: NextRequest, pathname: string, from?: string) {
   return NextResponse.redirect(url);
 }
 
+/**
+ * Security headers for the marketing site.
+ *
+ * Deliberately NOT the LMS policy. The apex has no session, talks to no
+ * backend and posts to no form handler, so its `connect-src` should not name
+ * Supabase or Stripe at all — a policy that grants reach nothing on that
+ * hostname uses is just a wider hole. It also means these headers can be
+ * applied before the environment check, which is what lets the marketing site
+ * stay up when the LMS configuration is broken.
+ */
+function applyWebsiteHeaders(response: NextResponse): void {
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      // Next emits inline bootstrap scripts. Same trade-off as the LMS policy;
+      // see docs/SECURITY.md for the nonce upgrade path.
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      'upgrade-insecure-requests',
+    ].join('; '),
+  );
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=(), interest-cohort=()',
+  );
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /*
+   * TWO PROPERTIES, ONE PROJECT.
+   *
+   * The apex (afriorbit.space) serves the marketing site; the LMS subdomain
+   * serves the learning platform. This branch is FIRST, before the environment
+   * check and before any Supabase client is constructed, and that ordering is
+   * the point rather than an optimisation:
+   *
+   *   - The marketing pages are statically prerendered and need no session.
+   *     Refreshing one on every page view would add a Supabase round trip to
+   *     the critical path of the front page.
+   *   - It decouples availability. A paused Supabase project, a rotated key or
+   *     a missing environment variable takes the LMS down; it must not take the
+   *     company's public website down with it, and without this ordering it
+   *     would — every apex request would redirect to /setup.
+   */
+  if (isWebsiteHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone();
+    if (!pathname.startsWith('/www')) {
+      url.pathname = pathname === '/' ? '/www' : `/www${pathname}`;
+    }
+    const out = NextResponse.rewrite(url);
+    applyWebsiteHeaders(out);
+    return out;
+  }
 
   /*
    * Fail visibly, not fatally.
