@@ -3,6 +3,11 @@ import type { Metadata, Viewport } from 'next';
 import { publicEnv } from '@/lib/env';
 
 import './globals.css';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 /*
  * `new URL()` throws on a malformed value, and this runs at module load in the
@@ -50,7 +55,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
       <body className="min-h-dvh antialiased">
         <a
           href="#main"
