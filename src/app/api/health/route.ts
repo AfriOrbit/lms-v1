@@ -32,7 +32,19 @@ export const runtime = 'nodejs';
  * in precisely the situation it exists to diagnose.
  */
 const BUILD_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const BUILD_SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+/*
+ * Both spellings, matching lib/env.ts. Supabase renamed anon -> publishable
+ * and its Vercel integration writes the new name. Reading only the old one
+ * here made this probe report "not configured" about an application that was
+ * running perfectly — the exact opposite of what a health endpoint is for.
+ */
+const BUILD_SUPABASE_ANON =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+const BUILD_ANON_VIA = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ? 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
+    : null;
 const BUILD_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? '';
 
 function shape(value: string) {
@@ -77,12 +89,18 @@ function visibleEnvNames(): string[] {
     .sort();
 }
 
-const EXPECTED = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'NEXT_PUBLIC_SITE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'IP_HASH_SALT',
+/**
+ * Each entry is a set of ACCEPTABLE names — any one of them satisfies it.
+ * Supabase's newer key names and the legacy ones are interchangeable here.
+ * NEXT_PUBLIC_SITE_URL is deliberately absent: it now defaults to the LMS
+ * host, so its absence is normal and reporting it as missing would train
+ * people to ignore this list.
+ */
+const EXPECTED: readonly (readonly string[])[] = [
+  ['NEXT_PUBLIC_SUPABASE_URL'],
+  ['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'],
+  ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY'],
+  ['IP_HASH_SALT'],
 ];
 
 export async function GET() {
@@ -103,18 +121,28 @@ export async function GET() {
 
   const buildTime = {
     NEXT_PUBLIC_SUPABASE_URL: { ...shape(url), valid: urlValid, trailingSlash: url.endsWith('/') },
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: shape(BUILD_SUPABASE_ANON),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: { ...shape(BUILD_SUPABASE_ANON), resolvedVia: BUILD_ANON_VIA },
     NEXT_PUBLIC_SITE_URL: shape(BUILD_SITE_URL),
   };
 
   const runtimeOnly = {
-    SUPABASE_SERVICE_ROLE_KEY: shape(process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''),
+    SUPABASE_SERVICE_ROLE_KEY: {
+      ...shape(process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? ''),
+      resolvedVia: process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? 'SUPABASE_SERVICE_ROLE_KEY'
+        : process.env.SUPABASE_SECRET_KEY
+          ? 'SUPABASE_SECRET_KEY'
+          : null,
+    },
     IP_HASH_SALT: shape(process.env.IP_HASH_SALT ?? ''),
     EMBED_ALLOWED_ORIGINS: shape(process.env.EMBED_ALLOWED_ORIGINS ?? ''),
   };
 
+  // NEXT_PUBLIC_SITE_URL is optional — it falls back to the LMS host — so its
+  // absence must not make the probe report an unhealthy deployment.
+  const OPTIONAL_BUILD_KEYS = new Set(['NEXT_PUBLIC_SITE_URL']);
   const blocking = Object.entries(buildTime)
-    .filter(([, v]) => !v.present)
+    .filter(([k, v]) => !v.present && !OPTIONAL_BUILD_KEYS.has(k))
     .map(([k]) => k)
     .concat(runtimeOnly.SUPABASE_SERVICE_ROLE_KEY.present ? [] : ['SUPABASE_SERVICE_ROLE_KEY'])
     .concat(runtimeOnly.IP_HASH_SALT.present ? [] : ['IP_HASH_SALT']);
@@ -122,7 +150,9 @@ export async function GET() {
   const anonLooksSecret = BUILD_SUPABASE_ANON.startsWith('sb_secret_');
 
   const seen = visibleEnvNames();
-  const notInjected = EXPECTED.filter((n) => !seen.includes(n));
+  const notInjected = EXPECTED.filter((names) => !names.some((n) => seen.includes(n))).map((names) =>
+    names.join(' or '),
+  );
 
   /*
    * Set at runtime but empty at build time is the signature of the inlining
@@ -132,6 +162,7 @@ export async function GET() {
     [
       ['NEXT_PUBLIC_SUPABASE_URL', BUILD_SUPABASE_URL],
       ['NEXT_PUBLIC_SUPABASE_ANON_KEY', BUILD_SUPABASE_ANON],
+      ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', BUILD_SUPABASE_ANON],
       ['NEXT_PUBLIC_SITE_URL', BUILD_SITE_URL],
     ] as const
   )

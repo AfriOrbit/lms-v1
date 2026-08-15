@@ -95,6 +95,17 @@ Development** for every row.
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` | Supabase → Project Settings → Data API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the anon / publishable key | same page. Public by design — RLS is what protects the data |
 | `SUPABASE_SERVICE_ROLE_KEY` | the service_role / secret key | same page. **Never** prefix it `NEXT_PUBLIC_` — it bypasses RLS entirely |
+
+> **If you use the Supabase Vercel integration instead of setting these by
+> hand,** it writes *different names*: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+> and `SUPABASE_SECRET_KEY`, because Supabase renamed anon → publishable and
+> service_role → secret. The app accepts **either** spelling, so the
+> integration alone is enough for those two. It does **not** set `IP_HASH_SALT`,
+> `NEXT_PUBLIC_SITE_HOST` or `NEXT_PUBLIC_LMS_HOST` — add those yourself.
+>
+> The integration attaches to **one specific Vercel project**. Creating a new
+> Vercel project does not move it; you must connect it again from Supabase →
+> Integrations, choosing the new project.
 | `IP_HASH_SALT` | any long random string | generate one, see below |
 | `NEXT_PUBLIC_SITE_HOST` | `afriorbit.space` | the marketing apex |
 | `NEXT_PUBLIC_LMS_HOST` | `develop.afriorbit.space` | this application's hostname |
@@ -139,9 +150,12 @@ Open `/setup` on the deployment and read the line **"Names this deployment can
 see"**:
 
 - **`(none at all)`** — the variables genuinely are not on this project. Not a
-  typo, not a cache: `SUPABASE_SERVICE_ROLE_KEY` and `IP_HASH_SALT` are read at
-  *runtime*, so if they had been set they would show up immediately without any
-  rebuild. Check you are looking at the right Vercel project.
+  typo, not a cache: the runtime-read variables would show up immediately if
+  they existed, with no rebuild at all. The page now also prints **which
+  deployment this is** (project, environment, repo, branch, commit) directly
+  underneath — compare that project name against the one the Supabase
+  integration is attached to. If no `POSTGRES_*` variables appear either, the
+  integration is connected to a different Vercel project.
 - **some names listed, yours not among them** — a typo in the variable *name*.
   The Vercel UI cannot catch this, because it shows what you typed and cannot
   know what the code expects.

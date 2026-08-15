@@ -41,10 +41,33 @@ function resolveSiteUrl(): string {
   return process.env.NODE_ENV === 'production' ? `https://${lmsHost}` : 'http://localhost:3000';
 }
 
+/**
+ * TWO NAMES FOR THE SAME KEY, AND WHY BOTH ARE ACCEPTED.
+ *
+ * Supabase has renamed its API keys: `anon` is now `publishable`, and
+ * `service_role` is now `secret`. The Supabase Vercel integration writes the
+ * NEW names — `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and
+ * `SUPABASE_SECRET_KEY` — while most existing code, this project included, was
+ * written against the old ones.
+ *
+ * The failure that causes is genuinely nasty to debug: you connect the
+ * official integration, the Vercel dashboard fills with Supabase variables,
+ * and the app still insists Supabase is not configured. Nothing is wrong on
+ * either side; the two are just using different vocabulary.
+ *
+ * So both are read, old name first. Each is a static `process.env.X` reference
+ * so Next inlines both at build time — a computed lookup would silently
+ * produce `undefined` in the browser.
+ */
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  '';
+
 /** Safe in the browser. */
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
-  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  supabaseAnonKey: anonKey,
   siteUrl: resolveSiteUrl(),
   brandName: process.env.NEXT_PUBLIC_BRAND_NAME ?? 'AfriOrbit Space',
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'learn@afriorbit.space',
@@ -89,8 +112,22 @@ export function assertSupabaseConfigured(caller: string): void {
 
 /** Server only. Never import into a client component. */
 export const serverEnv = {
+  /**
+   * `SUPABASE_SECRET_KEY` is the new name for `SUPABASE_SERVICE_ROLE_KEY`, and
+   * it is what the Supabase Vercel integration writes. Both are accepted for
+   * the same reason as the publishable key above. Read at runtime, so no
+   * inlining concern here.
+   */
   get supabaseServiceRoleKey(): string {
-    return required('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+    if (!key) {
+      throw new Error(
+        'Missing the Supabase secret key. Set SUPABASE_SERVICE_ROLE_KEY, or ' +
+          'SUPABASE_SECRET_KEY if you are using the Supabase Vercel integration, ' +
+          'which writes the newer name. Never prefix either with NEXT_PUBLIC_.',
+      );
+    }
+    return key;
   },
   get ipHashSalt(): string {
     return required('IP_HASH_SALT', process.env.IP_HASH_SALT);

@@ -73,8 +73,23 @@ export default async function SetupPage({
   const reportedMissing = (missing ?? '').split(',').filter(Boolean);
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  // Both spellings. Supabase renamed anon -> publishable and service_role ->
+  // secret, and its Vercel integration writes the new names. Reporting only
+  // the old ones would tell someone a variable is missing while it is sitting
+  // right there in their dashboard under a different name.
+  const anon =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+  const anonVia = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+      ? 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
+      : '';
+  const service = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? '';
+  const serviceVia = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? 'SUPABASE_SERVICE_ROLE_KEY'
+    : process.env.SUPABASE_SECRET_KEY
+      ? 'SUPABASE_SECRET_KEY'
+      : '';
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? '';
   const salt = process.env.IP_HASH_SALT ?? '';
 
@@ -88,27 +103,35 @@ export default async function SetupPage({
       problem: looksLikeSupabaseUrl(url),
     },
     {
-      name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      name: anonVia || 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       present: Boolean(anon),
       required: true,
       buildTime: true,
-      note: 'The anon / publishable key. Public by design — RLS is what protects the data.',
+      note:
+        'The anon / publishable key. Public by design — RLS is what protects the data. ' +
+        'Either NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ' +
+        '(the name the Supabase Vercel integration writes) will do.',
       problem: looksLikeKey(anon, 'publishable'),
     },
     {
-      name: 'SUPABASE_SERVICE_ROLE_KEY',
+      name: serviceVia || 'SUPABASE_SERVICE_ROLE_KEY',
       present: Boolean(service),
       required: true,
       buildTime: false,
-      note: 'The service_role / secret key. Bypasses RLS entirely — server only, never NEXT_PUBLIC_.',
+      note:
+        'The service_role / secret key. Bypasses RLS entirely — server only, never NEXT_PUBLIC_. ' +
+        'Either SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY (the newer name, written ' +
+        'by the Supabase Vercel integration) will do.',
       problem: looksLikeKey(service, 'secret'),
     },
     {
       name: 'NEXT_PUBLIC_SITE_URL',
       present: Boolean(site),
-      required: true,
+      required: false,
       buildTime: true,
-      note: 'This deployment’s own origin, with scheme and no trailing slash.',
+      note:
+        'Optional — defaults to https:// + NEXT_PUBLIC_LMS_HOST. This means THIS app’s ' +
+        'origin (the learning platform), not the marketing site’s.',
       problem: site && !/^https?:\/\/[^/]+$/.test(site)
         ? 'Must be a bare origin like https://learn.afriorbit.space — no path, no trailing slash.'
         : undefined,
@@ -164,10 +187,41 @@ export default async function SetupPage({
       (k) =>
         k.startsWith('NEXT_PUBLIC') ||
         k.includes('SUPABASE') ||
+        k.startsWith('POSTGRES_') ||
         k.startsWith('IP_HASH') ||
         k.startsWith('EMBED_'),
     )
     .sort();
+
+  /*
+   * Which deployment is this, actually?
+   *
+   * When the list above comes back empty the natural next question is whether
+   * the variables are on a DIFFERENT Vercel project from the one being looked
+   * at — easy to do the moment a second project exists for the same repo, and
+   * impossible to tell from a *.vercel.app URL. Vercel injects these on every
+   * deployment it builds, so they identify the project without revealing
+   * anything, and their ABSENCE says something too: it means this is not a
+   * Vercel deployment at all.
+   */
+  const deployment = {
+    project: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? '',
+    env: process.env.VERCEL_ENV ?? '',
+    repo: [process.env.VERCEL_GIT_REPO_OWNER, process.env.VERCEL_GIT_REPO_SLUG]
+      .filter(Boolean)
+      .join('/'),
+    branch: process.env.VERCEL_GIT_COMMIT_REF ?? '',
+    sha: (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7),
+  };
+  const onVercel = Boolean(process.env.VERCEL);
+
+  // POSTGRES_* and SUPABASE_JWT_SECRET are written only by the Supabase Vercel
+  // integration, never by hand. Seeing them proves the integration reached
+  // this project; not seeing them, when someone believes they connected it,
+  // means it is wired to a different project.
+  const integrationLinked = injectedNames.some(
+    (k) => k.startsWith('POSTGRES_') || k === 'SUPABASE_JWT_SECRET',
+  );
 
   const requiredNames = checks.filter((c) => c.required).map((c) => c.name);
   const neverInjected = requiredNames.filter((n) => !injectedNames.includes(n));
@@ -244,6 +298,32 @@ export default async function SetupPage({
           <p style={{ margin: '.25rem 0 0', fontSize: '.8rem', wordBreak: 'break-all' }}>
             {injectedNames.length > 0 ? injectedNames.join(' · ') : '(none at all)'}
           </p>
+
+          <p style={{ margin: '.9rem 0 0', fontSize: '.8rem', color: '#525866' }}>
+            Which deployment this is:
+          </p>
+          <p style={{ margin: '.25rem 0 0', fontSize: '.8rem', wordBreak: 'break-all' }}>
+            {onVercel
+              ? [
+                  deployment.project && `project ${deployment.project}`,
+                  deployment.env && `environment ${deployment.env}`,
+                  deployment.repo && `repo ${deployment.repo}`,
+                  deployment.branch && `branch ${deployment.branch}`,
+                  deployment.sha && `commit ${deployment.sha}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'on Vercel, but it published no project metadata'
+              : 'not a Vercel deployment — no VERCEL environment variables present'}
+          </p>
+          {onVercel && !integrationLinked && (
+            <p style={{ margin: '.9rem 0 0', fontSize: '.8rem', color: '#8a5a00' }}>
+              No <code>POSTGRES_*</code> or <code>SUPABASE_JWT_SECRET</code> here, which
+              means the Supabase Vercel integration is <strong>not</strong> connected to
+              this project. If you believe you connected it, it is attached to a different
+              Vercel project — check the project name above against the one in Supabase →
+              Integrations.
+            </p>
+          )}
         </div>
       )}
 
