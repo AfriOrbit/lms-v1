@@ -82,25 +82,73 @@ Delete Project**. Do this *after* the new deployment is confirmed working.
 
 ## Step 3 — Environment variables
 
-**Settings → Environment Variables**, for Production, Preview and Development:
+**A brand-new Vercel project starts with no environment variables at all.**
+Nothing is inherited from your previous project, from the GitHub repo, or from
+Supabase's Vercel integration unless you re-run it. This is the step that
+produces the "cannot reach Supabase" page if skipped.
 
-| Name | Value |
+**Settings → Environment Variables**. Tick **Production, Preview and
+Development** for every row.
+
+| Name | Value | Where to get it |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` | Supabase → Project Settings → Data API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the anon / publishable key | same page. Public by design — RLS is what protects the data |
+| `SUPABASE_SERVICE_ROLE_KEY` | the service_role / secret key | same page. **Never** prefix it `NEXT_PUBLIC_` — it bypasses RLS entirely |
+| `IP_HASH_SALT` | any long random string | generate one, see below |
+| `NEXT_PUBLIC_SITE_HOST` | `afriorbit.space` | the marketing apex |
+| `NEXT_PUBLIC_LMS_HOST` | `develop.afriorbit.space` | this application's hostname |
+
+Optional, safe to leave unset:
+
+| Name | Effect if unset |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the anon/publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | the service role key — **Production only** |
-| `NEXT_PUBLIC_SITE_HOST` | `afriorbit.space` |
-| `NEXT_PUBLIC_LMS_HOST` | `develop.afriorbit.space` |
+| `NEXT_PUBLIC_SITE_URL` | defaults to `https://` + `NEXT_PUBLIC_LMS_HOST`. **Leave it unset.** Despite the name it means *this app's* origin, not the marketing site's — setting it to `https://afriorbit.space` would print dead verification URLs on issued certificates and send Stripe buyers to a 404 |
+| `EMBED_ALLOWED_ORIGINS` | defaults to the afriorbit.space pair |
+| `STRIPE_SECRET_KEY` | paid checkout returns 503; everything else works |
+| `MFA_POLICY` | defaults to `all` |
+| `REGISTRATION_MODE` | defaults to `approval` |
 
-The last two have those exact values as built-in defaults, so the site works
-without them. Set them anyway: it is what makes a future rename a one-line
-change, and it makes preview deployments explicit about which is which.
+**Generating `IP_HASH_SALT`.** It salts the hashing of IP addresses in the
+audit log, so it must be random and must never change once set — changing it
+makes previously logged addresses unmatchable.
+
+```bash
+# macOS / Linux / Git Bash
+openssl rand -hex 32
+```
+
+```powershell
+# Windows PowerShell — uses a cryptographic RNG, not Get-Random
+$b = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+($b | ForEach-Object { $_.ToString('x2') }) -join ''
+```
+
+### Then redeploy without the cache
 
 `NEXT_PUBLIC_*` values are **inlined at build time**, not read at runtime.
-Changing one and not redeploying does nothing. After any change: **Deployments
-→ ⋯ → Redeploy**, with "Use existing Build Cache" **off**.
+Adding one and not rebuilding does nothing.
 
----
+**Deployments → the latest → ⋯ → Redeploy**, and untick **"Use existing Build
+Cache"**.
+
+### If it still says the variables are missing
+
+Open `/setup` on the deployment and read the line **"Names this deployment can
+see"**:
+
+- **`(none at all)`** — the variables genuinely are not on this project. Not a
+  typo, not a cache: `SUPABASE_SERVICE_ROLE_KEY` and `IP_HASH_SALT` are read at
+  *runtime*, so if they had been set they would show up immediately without any
+  rebuild. Check you are looking at the right Vercel project.
+- **some names listed, yours not among them** — a typo in the variable *name*.
+  The Vercel UI cannot catch this, because it shows what you typed and cannot
+  know what the code expects.
+- **your names listed but still reported missing** — they were set after the
+  build. Redeploy with the cache off.
+
+`/api/health` on the same deployment returns the same information as JSON.
 
 ## Step 4 — Add both domains in Vercel
 

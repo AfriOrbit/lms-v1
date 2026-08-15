@@ -17,11 +17,35 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
+/**
+ * `NEXT_PUBLIC_SITE_URL` is THIS APPLICATION'S origin — the LMS — not the
+ * marketing site's.
+ *
+ * The name is a trap, and it is worth naming rather than leaving for someone
+ * to fall into. Since the marketing site and the LMS became one project there
+ * are two hostnames in play, and `NEXT_PUBLIC_SITE_HOST` (in lib/site-config)
+ * means the marketing apex while this means the LMS. Anyone reading the
+ * dashboard would reasonably set this to `https://afriorbit.space`, and the
+ * consequences are quiet and bad: certificate verification URLs printed on
+ * issued certificates would point at a hostname with no /verify route, and
+ * Stripe would return buyers to a 404 after payment.
+ *
+ * So it defaults to the LMS host rather than requiring anyone to get it right.
+ * In development it falls back to localhost, because a build there should not
+ * send Stripe redirects to production.
+ */
+function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, '');
+  if (explicit) return explicit;
+  const lmsHost = process.env.NEXT_PUBLIC_LMS_HOST?.trim() || 'develop.afriorbit.space';
+  return process.env.NODE_ENV === 'production' ? `https://${lmsHost}` : 'http://localhost:3000';
+}
+
 /** Safe in the browser. */
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  siteUrl: resolveSiteUrl(),
   brandName: process.env.NEXT_PUBLIC_BRAND_NAME ?? 'AfriOrbit Space',
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'learn@afriorbit.space',
 } as const;

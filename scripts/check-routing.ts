@@ -11,6 +11,7 @@
  */
 
 import { SITE_PAGES, getSitePage } from '../src/content/site-pages';
+import { publicEnv } from '../src/lib/env';
 import { LMS_HOST, LMS_URL, SITE_HOST, SITE_URL, isWebsiteHost } from '../src/lib/site-config';
 
 let failed = 0;
@@ -48,6 +49,33 @@ ok('undefined host is not the marketing site', !isWebsiteHost(undefined));
 ok('the site and LMS hostnames are different', SITE_HOST !== LMS_HOST, `${SITE_HOST} vs ${LMS_HOST}`);
 ok('the LMS is a subdomain of the site', LMS_HOST.endsWith(`.${SITE_HOST}`), LMS_HOST);
 ok('URLs are https', SITE_URL.startsWith('https://') && LMS_URL.startsWith('https://'));
+
+/* -- the NEXT_PUBLIC_SITE_URL trap --------------------------------------- */
+
+// `NEXT_PUBLIC_SITE_URL` means this application's origin (the LMS); the
+// similarly-named `NEXT_PUBLIC_SITE_HOST` means the marketing apex. Two names
+// that read alike and mean opposite things is a trap, so the default is
+// derived from the LMS host and this asserts it stayed that way. Setting it to
+// the marketing apex would print dead verification URLs onto issued
+// certificates and return Stripe buyers to a 404 — both silent.
+{
+  const derived = publicEnv.siteUrl.replace(/^https?:\/\//, '').split(':')[0];
+  ok(
+    'siteUrl points at the LMS, never at the marketing apex',
+    derived !== SITE_HOST && derived !== `www.${SITE_HOST}`,
+    publicEnv.siteUrl,
+  );
+  ok(
+    'siteUrl has no trailing slash',
+    !publicEnv.siteUrl.endsWith('/'),
+    publicEnv.siteUrl,
+  );
+  ok(
+    'siteUrl is the LMS host or a local development origin',
+    derived === LMS_HOST || derived === 'localhost' || Boolean(process.env.NEXT_PUBLIC_SITE_URL),
+    `${publicEnv.siteUrl} (LMS host is ${LMS_HOST})`,
+  );
+}
 
 /* -- the rewrite the proxy performs -------------------------------------- */
 
