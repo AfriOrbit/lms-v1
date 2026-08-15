@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { SandboxMount } from './sandbox-mount';
 
@@ -27,17 +27,61 @@ import { SandboxMount } from './sandbox-mount';
  * are the entire payload and none of them benefit from being pre-rendered.
  *
  * The placeholder is sized to roughly match so the page does not jump.
+ *
+ * MOUNTING IS ALSO DEFERRED UNTIL THE SANDBOX IS NEAR THE VIEWPORT.
+ *
+ * The index stacks ten of these. Four are code-split and carry real data — the
+ * parsed KiCad boards and the decimated CubeSat mesh — and one starts a WebGL
+ * context and an animation loop. Mounting all ten on load means fetching every
+ * chunk and running every simulation before the visitor has scrolled past the
+ * first, on a page most people open to look at one thing.
+ *
+ * An IntersectionObserver with a generous root margin starts the work about a
+ * screen ahead of the scroll, which in practice means the sandbox is ready by
+ * the time it is looked at. Once mounted it stays mounted: unmounting would
+ * throw away whatever the visitor had typed into it.
+ *
+ * Where IntersectionObserver is unavailable, the sandbox mounts on the next
+ * tick instead — still after hydration, just without the scroll gate.
+ *
+ * The placeholder must render on the server AND on the first client pass. An
+ * earlier revision keyed the placeholder on whether IntersectionObserver
+ * existed, which is false on the server: that quietly server-rendered every
+ * sandbox again and put back the hydration mismatch this component exists to
+ * prevent. The gate has to be state that starts false everywhere.
  */
 export function ClientOnlySandbox({ simulationKey }: { simulationKey: string }) {
-  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const holder = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const el = holder.current;
+
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      // Mount on the next tick rather than synchronously here: setting state
+      // inside the effect body would cascade a second render of the whole
+      // sandbox tree before the browser has painted the placeholder.
+      const t = setTimeout(() => setVisible(true), 0);
+      return () => clearTimeout(t);
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
 
-  if (!mounted) {
+  if (!visible) {
     return (
       <div
+        ref={holder}
         className="flex min-h-[420px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-card)]"
         aria-busy="true"
       >

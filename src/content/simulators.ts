@@ -55,6 +55,30 @@ export const SIMULATORS: SimulatorEntry[] = [
     settles:
       'How high the airframe goes and how hard it comes back: burn, coast to apogee, stability margin and descent rate under canopy.',
   },
+  {
+    key: 'mission-designer',
+    title: 'Mission designer',
+    settles:
+      'Whether a whole spacecraft closes: assemble one from AfriOrbit\'s real boards, fly it through eclipse cycles and ground station passes, and see mass, charge and downlink budgets settle or fail together.',
+  },
+  {
+    key: 'board-explorer',
+    title: 'Board explorer',
+    settles:
+      'What is actually on the flight hardware: the real KiCad layouts, every footprint, net and BOM line, read straight out of the board files.',
+  },
+  {
+    key: 'orbit-lab',
+    title: 'Orbital mechanics lab',
+    settles:
+      'Where the spacecraft will be and when you can talk to it: ground tracks, J2 drift, eclipse, pass prediction, Doppler and Walker constellations, from elements or a pasted TLE.',
+  },
+  {
+    key: 'spacecraft-viewer',
+    title: 'Spacecraft viewer',
+    settles:
+      'What the flight article looks like and how it is oriented: the EduSat CAD in three dimensions, lit by the real Sun vector and driven by the attitude law you pick.',
+  },
 ];
 
 export interface SimulatorUsage {

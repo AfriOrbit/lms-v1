@@ -7,7 +7,7 @@ import { Badge, Card, PageHeader } from '@/components/ui/primitives';
 export const metadata = {
   title: 'Simulators',
   description:
-    'Six engineering sandboxes — power budget, data budget, link budget, LoRa airtime, beacon decoder and rocket flight profile. Free, no account needed.',
+    'Ten engineering sandboxes — mission designer, PCB explorer, orbital mechanics lab, 3D spacecraft viewer, power and data and link budgets, LoRa airtime, beacon decoder and rocket flight profile. Free, no account needed.',
 };
 
 /**
@@ -22,7 +22,7 @@ export default function SimulatorsPage() {
       <PageHeader
         eyebrow="Sandboxes"
         title="Simulators"
-        description="The six engineering sandboxes used across the curriculum. Each one settles a question that otherwise gets settled by argument. They run entirely in your browser — no account, no sign-in, nothing saved."
+        description="Ten engineering sandboxes, built on AfriOrbit's own flight hardware and CAD. Each one settles a question that otherwise gets settled by argument. They run entirely in your browser — no account and no sign-in, and every configuration you build becomes a link you can share."
         actions={
           <Link href="/catalog" className="text-sm text-ion-300 hover:text-ion-200">
             Back to the catalogue →

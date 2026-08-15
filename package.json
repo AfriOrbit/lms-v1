@@ -13,10 +13,16 @@
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > src/types/database.generated.ts",
     "db:test": "bash scripts/db-test.sh",
-    "verify": "npm run typecheck && npm run lint && npm run check:content && npm run check:domain && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run check:content && npm run check:domain && npm run check:physics && npm run build",
     "check:domain": "tsx scripts/check-domain.ts",
     "check:content": "tsx scripts/check-content.ts",
-    "prebuild": "tsx scripts/check-content.ts"
+    "prebuild": "tsx scripts/check-content.ts",
+    "check:orbit": "tsx scripts/check-orbit.ts",
+    "check:mission": "tsx scripts/check-mission.ts",
+    "check:geometry": "tsx scripts/check-geometry.ts",
+    "check:power": "tsx scripts/check-power.ts",
+    "check:physics": "npm run check:power && npm run check:orbit && npm run check:mission && npm run check:geometry",
+    "extract": "python3 scripts/extract-hardware.py && python3 scripts/extract-geometry.py"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -50,5 +56,5 @@
     "supabase": "^2",
     "tsx": "^4.21.0"
   },
-  "description": "AfriOrbit Space learning platform — CubeSat and satellite-to-IoT engineering training"
+  "description": "AfriOrbit Space learning platform \u2014 CubeSat and satellite-to-IoT engineering training"
 }
