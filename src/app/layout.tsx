@@ -3,10 +3,18 @@ import type { Metadata, Viewport } from 'next';
 import { publicEnv } from '@/lib/env';
 
 import './globals.css';
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { GeistSans } from 'geist/font/sans';
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import { cn } from '@/lib/utils';
+
+/*
+ * Geist from Vercel's own `geist` npm package, NOT `next/font/google`.
+ *
+ * Same reasoning as the IBM Plex import in the website layout: next/font/google
+ * downloads the font from fonts.googleapis.com during `next build`, which turns
+ * a Google outage — or any build sandbox without egress — into a failed deploy.
+ * The `geist` package ships the woff2 files, so `npm ci` is the only fetch.
+ */
 
 
 /*
@@ -55,7 +63,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn('font-sans', GeistSans.variable)}>
       <body className="min-h-dvh antialiased">
         <a
           href="#main"
