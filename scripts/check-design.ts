@@ -14,6 +14,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 let failed = 0;
@@ -24,7 +25,16 @@ const ok = (label: string, cond: boolean, detail = '') => {
   else failed += 1;
 };
 
-const root = join(import.meta.dirname, '..');
+/*
+ * `fileURLToPath(new URL('..', import.meta.url))`, not `import.meta.dirname`.
+ *
+ * `import.meta.dirname` was added in Node 20.11 and is only populated for real
+ * ESM modules. Under a TypeScript runner that transpiles to CommonJS it is
+ * silently `undefined` — not an error, just undefined — so `join(undefined, '..')`
+ * throws ERR_INVALID_ARG_TYPE and, because this runs in `prebuild`, takes the
+ * whole deployment with it. The URL form works under every loader.
+ */
+const root = fileURLToPath(new URL('..', import.meta.url));
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((e) => {
     const full = join(dir, e);

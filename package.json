@@ -16,7 +16,7 @@
     "verify": "npm run typecheck && npm run lint && npm run check:stale && npm run check:exports && npm run check:design && npm run check:content && npm run check:domain && npm run check:routing && npm run check:physics && npm run build",
     "check:domain": "tsx scripts/check-domain.ts",
     "check:content": "tsx scripts/check-content.ts",
-    "prebuild": "tsx scripts/check-stale.ts && tsx scripts/check-content.ts",
+    "prebuild": "node scripts/prebuild.mjs",
     "check:orbit": "tsx scripts/check-orbit.ts",
     "check:mission": "tsx scripts/check-mission.ts",
     "check:geometry": "tsx scripts/check-geometry.ts",
