@@ -43,15 +43,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a0c10',
+  themeColor: '#05070d',
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark surface-dark" suppressHydrationWarning>
-      <body className="surface-dark min-h-dvh bg-[var(--bg)] text-[var(--text)] antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body className="surface-light min-h-dvh">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-[var(--invert-bg)] focus:px-4 focus:py-2 focus:text-[var(--invert-fg)]"
