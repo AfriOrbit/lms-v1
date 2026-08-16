@@ -22,7 +22,7 @@
  * Run:  npx tsx scripts/check-exports.ts
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import * as utils from '../src/lib/utils';
 
@@ -133,6 +133,70 @@ if (present.has('safeRedirectPath')) {
     } else {
       console.log(`PASS  ${file} present and ${why}`);
     }
+  }
+}
+
+/* -- no debug or scratch route may ship ----------------------------------- */
+
+// A route called `boom-test` that threw unconditionally was written to verify
+// the error boundary, and then travelled all the way into a release zip. It
+// type-checked, it linted, and it built — a page whose entire job is to return
+// 500 is perfectly valid code. Only reading the route table caught it.
+//
+// So the route table gets read automatically now.
+{
+  const appDir = new URL('../src/app/', import.meta.url);
+  const FORBIDDEN = /^(boom|test|tests|debug|tmp|temp|scratch|sandbox-test|__)/i;
+
+  const routeDirs: string[] = [];
+  const walkRoutes = (dir: URL, prefix: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const next = new URL(`${entry.name}/`, dir);
+      // Route groups "(x)" and private folders "_x" are not URL segments.
+      const segment = entry.name.startsWith('(') || entry.name.startsWith('_')
+        ? prefix
+        : `${prefix}/${entry.name}`;
+      if (!entry.name.startsWith('(') && !entry.name.startsWith('_')) {
+        routeDirs.push(entry.name);
+      }
+      walkRoutes(next, segment);
+    }
+  };
+  walkRoutes(appDir, '');
+
+  const suspicious = routeDirs.filter((d) => FORBIDDEN.test(d));
+  if (suspicious.length > 0) {
+    failed = 1;
+    console.error(
+      `FAIL  a debug route is about to ship: ${suspicious.join(', ')}. ` +
+        'Delete it, or rename it if it is genuinely a product route.',
+    );
+  } else {
+    console.log(`PASS  no debug or scratch routes among ${routeDirs.length} route folders`);
+  }
+
+  // The specific shape that got through: a page component whose body is
+  // nothing but a throw.
+  const throwers: string[] = [];
+  const walkFiles = (dir: URL) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const next = new URL(entry.isDirectory() ? `${entry.name}/` : entry.name, dir);
+      if (entry.isDirectory()) walkFiles(next);
+      else if (entry.name === 'page.tsx') {
+        const body = readFileSync(next, 'utf8');
+        if (/export default async function \w+\([^)]*\)[^{]*\{\s*throw /.test(body)) {
+          throwers.push(next.pathname);
+        }
+      }
+    }
+  };
+  walkFiles(appDir);
+  if (throwers.length > 0) {
+    failed = 1;
+    console.error(`FAIL  a page throws unconditionally: ${throwers.join(', ')}`);
+  } else {
+    console.log('PASS  no page component throws unconditionally');
   }
 }
 

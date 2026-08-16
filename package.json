@@ -24,7 +24,6 @@
     "check:physics": "npm run check:power && npm run check:orbit && npm run check:mission && npm run check:geometry",
     "extract": "python3 scripts/extract-hardware.py && python3 scripts/extract-geometry.py",
     "check:routing": "tsx scripts/check-routing.ts",
-    "import:site": "node scripts/import-site.mjs ../afriorbit-web",
     "check:exports": "tsx scripts/check-exports.ts"
   },
   "dependencies": {
