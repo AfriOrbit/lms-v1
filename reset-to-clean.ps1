@@ -84,14 +84,24 @@ Ok "backup branch $backup  (recover anything with: git diff $branch $backup -- <
 # --------------------------------------------------------------------------
 Step 3 "Removing tracked files"
 
-# Only tracked files. Untracked things like node_modules, .next and .env.local
-# are left alone deliberately: .env.local holds your local settings, and
-# reinstalling node_modules for no reason costs a minute.
+# An earlier version of this script preserved `.env` as well as `.env.local`,
+# reasoning that both held local settings. That was wrong: `.env` had been
+# committed, so preserving it meant `git add -A` put it straight back and Vercel
+# reported "Detected .env file". A committed .env is loaded during the build and
+# quietly competes with the dashboard values you are trying to debug. Only
+# `.env.local` — which .gitignore actually covers — is kept.
+if (git ls-files --error-unmatch .env 2>$null) {
+    git rm -q --cached .env | Out-Null
+    Write-Host "    !!  .env was COMMITTED to this repo. Removing it from version control." -ForegroundColor Yellow
+    Write-Host "        If it ever held real keys, rotate them: git history keeps them." -ForegroundColor Yellow
+}
+Remove-Item .env -Force -ErrorAction SilentlyContinue
+
 git rm -r -q --cached . | Out-Null
 Get-ChildItem -Force | Where-Object {
-    $_.Name -notin @('.git', 'node_modules', '.next', '.env.local', '.env', '.vercel', 'reset-to-clean.ps1')
+    $_.Name -notin @('.git', 'node_modules', '.next', '.env.local', '.vercel', 'reset-to-clean.ps1')
 } | Remove-Item -Recurse -Force
-Ok "tracked files cleared"
+Ok "tracked files cleared (.env removed, .env.local kept)"
 
 # --------------------------------------------------------------------------
 Step 4 "Copying in the verified tree"
