@@ -31,7 +31,7 @@ export function ShareBar({
           {warning}
         </Alert>
       ) : null}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
         <p className="min-w-0 flex-1 text-sm text-[var(--text-muted)]">
           {link
             ? `This ${what} is in the address bar. Copy the link to share it — no account needed.`

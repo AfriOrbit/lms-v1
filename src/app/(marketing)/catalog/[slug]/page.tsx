@@ -101,7 +101,7 @@ export default async function CourseDetailPage({
               <ul className="space-y-2">
                 {course.outcomes.map((outcome) => (
                   <li key={outcome} className="flex gap-2.5 text-sm">
-                    <span className="mt-0.5 text-signal-400" aria-hidden="true">
+                    <span className="mt-0.5 text-[var(--good)]" aria-hidden="true">
                       ✓
                     </span>
                     <span>{outcome}</span>
@@ -149,7 +149,7 @@ export default async function CourseDetailPage({
                       <li key={lesson.slug}>
                         <Link
                           href={`/learn/${course.slug}/${lesson.slug}`}
-                          className="flex items-center justify-between gap-4 px-5 py-3 text-sm transition-colors hover:bg-void-800/60"
+                          className="flex items-center justify-between gap-4 px-5 py-3 text-sm transition-colors hover:bg-[var(--bg-hover)]"
                         >
                           <span className="flex min-w-0 items-center gap-2.5">
                             <span className="shrink-0 font-mono text-xs uppercase text-[var(--text-muted)]">
@@ -222,8 +222,8 @@ export default async function CourseDetailPage({
             </ButtonLink>
 
             {course.requiresHardware && course.hardwareNotes ? (
-              <div className="mt-5 rounded-lg border border-ember-500/30 bg-ember-500/5 p-3 text-xs text-[var(--text-muted)]">
-                <p className="mb-1 font-semibold text-ember-400">Hardware</p>
+              <div className="mt-5 border border-[var(--warn-line)] bg-[var(--warn-bg)] p-3 text-xs text-[var(--text-muted)]">
+                <p className="mb-1 font-semibold text-[var(--warn)]">Hardware</p>
                 {course.hardwareNotes}
               </div>
             ) : null}

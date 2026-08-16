@@ -99,7 +99,7 @@ function WorldPlot({
   const y = (lat: number) => ((90 - lat) / 180) * H;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full rounded-lg bg-[#0a1420]" role="img" aria-label="Ground track">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full bg-[#0a1420]" role="img" aria-label="Ground track">
       {/* Daylight band, centred on the sub-solar longitude and half the map
           wide. An earlier version shaded the NIGHT side instead, in #050a12
           over a #0a1420 background — technically correct and completely
@@ -498,7 +498,7 @@ function DopplerPlot({ data }: { data: { t: number; hz: number; el: number }[] }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
+    <div className="border border-[var(--border)] bg-[var(--bg-card)] p-3">
       <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
       <p className="font-mono text-base tabular-nums">{value}</p>
     </div>

@@ -157,14 +157,14 @@ export default async function CourseHomePage({
                       <li key={lesson.slug}>
                         <Link
                           href={`/learn/${course.slug}/${lesson.slug}`}
-                          className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-void-800/60"
+                          className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-[var(--bg-hover)]"
                         >
                           <span
                             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
-                              isDone
-                                ? 'border-signal-500 bg-signal-500/20 text-signal-400'
-                                : 'border-[var(--border)] text-transparent'
-                            }`}
+ isDone
+ ? 'border-[var(--good-line)] bg-[var(--good-bg)] text-[var(--good)]'
+ : 'border-[var(--border)] text-transparent'
+ }`}
                             aria-hidden="true"
                           >
                             ✓
@@ -191,7 +191,7 @@ export default async function CourseHomePage({
                 {contentQuizRow ? (
                   <Link
                     href={`/quiz/${contentQuizRow.id}`}
-                    className="font-medium hover:text-ion-300"
+                    className="font-medium hover:text-[var(--accent)]"
                   >
                     {contentQuiz.title}
                   </Link>
@@ -224,7 +224,7 @@ export default async function CourseHomePage({
                     <li key={quiz.id} className="text-sm">
                       <Link
                         href={`/quiz/${quiz.id}`}
-                        className="font-medium hover:text-ion-300"
+                        className="font-medium hover:text-[var(--accent)]"
                       >
                         {quiz.title}
                       </Link>
@@ -245,7 +245,7 @@ export default async function CourseHomePage({
               <ul className="mt-3 space-y-2 text-sm">
                 {state.assignments.map((assignment) => (
                   <li key={assignment.id}>
-                    <Link href={`/labs/${assignment.slug}`} className="hover:text-ion-300">
+                    <Link href={`/labs/${assignment.slug}`} className="hover:text-[var(--accent)]">
                       {assignment.title}
                     </Link>
                   </li>

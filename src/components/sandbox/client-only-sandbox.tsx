@@ -82,7 +82,7 @@ export function ClientOnlySandbox({ simulationKey }: { simulationKey: string }) 
     return (
       <div
         ref={holder}
-        className="flex min-h-[420px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-card)]"
+        className="flex min-h-[420px] items-center justify-center border border-[var(--border)] bg-[var(--bg-card)]"
         aria-busy="true"
       >
         <p className="text-sm text-[var(--text-muted)]">Loading the simulator…</p>

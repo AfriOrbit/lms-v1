@@ -51,8 +51,8 @@ function Term({
         <span className="text-sm text-[var(--text-muted)]">{label}</span>
         <span
           className={`font-mono text-sm tabular-nums ${
-            emphasis === 'good' ? 'text-signal-400' : emphasis === 'bad' ? 'text-alert-400' : ''
-          }`}
+ emphasis === 'good' ? 'text-[var(--good)]' : emphasis === 'bad' ? 'text-[var(--bad)]' : ''
+ }`}
         >
           {value}
         </span>
@@ -316,12 +316,12 @@ export function LoraAirtimeSandbox() {
                       <tr
                         key={row.sf}
                         className={`border-t border-[var(--border)] ${
-                          active ? 'bg-ion-500/8' : ''
-                        }`}
+ active ? 'bg-[var(--accent-bg)]' : ''
+ }`}
                       >
                         <td className="py-1.5 pr-3 font-mono text-xs">
                           SF{row.sf}
-                          {active ? <span className="ml-2 text-ion-400">◂</span> : null}
+                          {active ? <span className="ml-2 text-[var(--accent)]">◂</span> : null}
                         </td>
                         <td className="py-1.5 pr-3 font-mono text-xs tabular-nums">
                           {seconds(row.symbolS)}

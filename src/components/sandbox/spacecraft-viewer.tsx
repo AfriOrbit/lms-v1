@@ -429,7 +429,7 @@ export function SpacecraftViewerSandbox() {
             <div className="relative">
               <canvas
                 ref={canvasRef}
-                className="h-[420px] w-full cursor-grab touch-none rounded-lg active:cursor-grabbing"
+                className="h-[420px] w-full cursor-grab touch-none active:cursor-grabbing"
                 aria-label="Three-dimensional view of the EduSat CubeSat"
               />
               {!ready ? (
@@ -507,7 +507,7 @@ export function SpacecraftViewerSandbox() {
                   <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm">
                     <input type="checkbox" checked={!state.hidden.includes(p.id)} onChange={() => toggle(p.id)} />
                     <span
-                      className="inline-block h-3 w-3 shrink-0 rounded-sm"
+                      className="inline-block h-3 w-3 shrink-0 "
                       style={{ background: `rgb(${c.map((v) => Math.round(v * 255)).join(',')})` }}
                     />
                     <span className="min-w-0 flex-1 truncate">{p.label}</span>

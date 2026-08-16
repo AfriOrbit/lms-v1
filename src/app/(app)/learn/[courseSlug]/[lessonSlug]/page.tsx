@@ -110,7 +110,7 @@ export default async function LessonPage({
         ) : null}
 
         {lessonQuiz ? (
-          <Card className="mt-10 border-ion-500/35 bg-ion-500/5">
+          <Card className="mt-10 border-[var(--accent-line)] bg-[var(--accent-bg)]">
             <h2 className="text-base font-semibold">{lessonQuiz.title}</h2>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
               Pass mark {lessonQuiz.passThreshold}% · up to {lessonQuiz.maxAttempts}{' '}
@@ -121,7 +121,7 @@ export default async function LessonPage({
             </p>
             <Link
               href={`/quiz/${lessonQuiz.id}`}
-              className="mt-4 inline-flex h-10 items-center rounded-lg bg-ion-600 px-4 text-sm font-medium text-white hover:bg-ion-500"
+              className="mt-4 inline-flex h-10 items-center bg-[var(--accent)] px-4 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]"
             >
               Open assessment
             </Link>

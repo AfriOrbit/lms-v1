@@ -31,7 +31,7 @@ export default async function AccountPage() {
               <Badge tone={profile.mfa_enabled ? 'success' : 'danger'}>
                 {profile.mfa_enabled ? 'Enabled' : 'Not enabled'}
               </Badge>
-              <Link href="/account/mfa" className="text-ion-300 hover:underline">
+              <Link href="/account/mfa" className="text-[var(--accent)] hover:underline">
                 Manage
               </Link>
             </dd>

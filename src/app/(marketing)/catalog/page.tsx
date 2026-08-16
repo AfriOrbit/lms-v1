@@ -69,7 +69,7 @@ export default async function CatalogPage({
         actions={
           <Link
             href="/catalog/simulators"
-            className="text-sm text-ion-300 hover:text-ion-200"
+            className="text-sm text-[var(--accent)] hover:text-[var(--accent)]"
           >
             Try the simulators →
           </Link>
@@ -96,10 +96,10 @@ export default async function CatalogPage({
               key={option.value || 'all'}
               href={query ? `/catalog?${query}` : '/catalog'}
               className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
-                (activeLevel ?? '') === option.value
-                  ? 'border-ion-500 bg-ion-500/12 text-ion-200'
-                  : 'border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]'
-              }`}
+ (activeLevel ?? '') === option.value
+ ? 'border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]'
+ : 'border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]'
+ }`}
             >
               {option.label}
             </Link>
@@ -162,12 +162,12 @@ export default async function CatalogPage({
                       <h3 className="text-base font-semibold leading-snug">
                         <Link
                           href={`/catalog/${course.slug}`}
-                          className="hover:text-ion-300"
+                          className="hover:text-[var(--accent)]"
                         >
                           {course.title}
                         </Link>
                       </h3>
-                      <p className="mt-1 text-sm text-ion-300/80">{course.subtitle}</p>
+                      <p className="mt-1 text-sm text-[var(--accent)]">{course.subtitle}</p>
 
                       <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--text-muted)]">
                         {course.summary}

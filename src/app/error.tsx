@@ -44,7 +44,7 @@ export default function ErrorPage({
       </p>
 
       {error.digest ? (
-        <dl className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--bg-raised,transparent)] p-4 text-sm">
+        <dl className="mt-6 border border-[var(--border)] bg-[var(--bg-raised,transparent)] p-4 text-sm">
           <dt className="text-[var(--text-muted)]">Error reference</dt>
           <dd className="mt-1 font-mono text-base">{error.digest}</dd>
         </dl>
@@ -54,19 +54,19 @@ export default function ErrorPage({
         <button
           type="button"
           onClick={reset}
-          className="rounded-lg bg-ion-500 px-4 py-2 text-sm font-medium text-void-950 hover:bg-ion-400"
+          className="bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]"
         >
           Try again
         </button>
         <a
           href="/dashboard"
-          className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-void-800"
+          className="border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--bg-hover)]"
         >
           Back to the dashboard
         </a>
         <a
           href="/api/health"
-          className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-void-800"
+          className="border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--bg-hover)]"
         >
           Check configuration
         </a>

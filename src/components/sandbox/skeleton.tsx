@@ -5,7 +5,7 @@
 export function Skeleton({ label, height = 420 }: { label: string; height?: number }) {
   return (
     <div
-      className="flex items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-card)]"
+      className="flex items-center justify-center border border-[var(--border)] bg-[var(--bg-card)]"
       style={{ minHeight: height }}
       aria-busy="true"
     >

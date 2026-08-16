@@ -144,10 +144,11 @@ npm install
 npm run verify
 ```
 
-`verify` runs typecheck, lint, four check suites and a production build. The
+`verify` runs typecheck, lint, five check suites and a production build. The
 check suites assert things a type check cannot: that `src/lib/utils.ts` still
 exports all eight symbols shadcn likes to delete, that no environment value can
 reach an HTTP header un-sanitised, that the cross-link to the company site is a
 well-formed origin and still rendered in the header, that no debug route is
-about to ship, and that the physics in the simulators still agrees with the
-closed-form answers.
+about to ship, that no component hardcodes a palette step or a border radius or
+a literal `text-white` (all three break one of the two surfaces), and that the
+physics in the simulators still agrees with the closed-form answers.

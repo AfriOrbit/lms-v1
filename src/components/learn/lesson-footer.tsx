@@ -140,7 +140,7 @@ export function LessonFooter({
       </div>
 
       {failed ? (
-        <p className="mt-3 text-right text-xs text-ember-400">
+        <p className="mt-3 text-right text-xs text-[var(--warn)]">
           Progress could not be saved just now. The lesson is unaffected.
         </p>
       ) : null}

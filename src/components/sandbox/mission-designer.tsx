@@ -271,7 +271,7 @@ export function MissionDesignerSandbox() {
                     return (
                       <label
                         key={m.id}
-                        className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--border)] p-2 text-sm hover:bg-[var(--bg-subtle)]"
+                        className="flex cursor-pointer items-start gap-2 border border-[var(--border)] p-2 text-sm hover:bg-[var(--bg-subtle)]"
                       >
                         <input type="checkbox" className="mt-1" checked={on} onChange={() => toggleModule(m.id)} />
                         <span className="min-w-0 flex-1">
@@ -380,10 +380,10 @@ export function MissionDesignerSandbox() {
                     type="button"
                     onClick={() => toggleStation(s.id)}
                     className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                      state.stationIds.includes(s.id)
-                        ? 'border-transparent bg-[#1d6ff0] text-white'
-                        : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
-                    }`}
+ state.stationIds.includes(s.id)
+ ? 'border-transparent bg-[#1d6ff0] text-white'
+ : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
+ }`}
                     aria-pressed={state.stationIds.includes(s.id)}
                   >
                     {s.name.split(' (')[0]}
@@ -585,8 +585,8 @@ export function MissionDesignerSandbox() {
                         <td className="py-1.5 text-right font-mono tabular-nums">{groupNumber(Math.round(p.minRangeKm))} km</td>
                         <td
                           className={`py-1.5 text-right font-mono tabular-nums ${
-                            p.linkMarginDb > 0 ? 'text-signal-400' : 'text-alert-400'
-                          }`}
+ p.linkMarginDb > 0 ? 'text-[var(--good)]' : 'text-[var(--bad)]'
+ }`}
                         >
                           {p.linkMarginDb.toFixed(1)} dB
                         </td>
@@ -619,9 +619,9 @@ export function MissionDesignerSandbox() {
 
 function Metric({ label, value, sub, bad }: { label: string; value: string; sub: string; bad?: boolean }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
+    <div className="border border-[var(--border)] bg-[var(--bg-card)] p-3">
       <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className={`font-mono text-xl tabular-nums ${bad ? 'text-alert-400' : ''}`}>{value}</p>
+      <p className={`font-mono text-xl tabular-nums ${bad ? 'text-[var(--bad)]' : ''}`}>{value}</p>
       <p className="text-xs text-[var(--text-muted)]">{sub}</p>
     </div>
   );

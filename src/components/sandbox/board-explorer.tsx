@@ -153,7 +153,7 @@ export function BoardExplorerSandbox() {
 
           <svg
             viewBox={`${x1 - M} ${y1 - M} ${widthMm + 2 * M} ${heightMm + 2 * M}`}
-            className="w-full rounded-lg bg-[#080d14]"
+            className="w-full bg-[#080d14]"
             role="img"
             aria-label={`${board.name} printed circuit board layout`}
           >
@@ -283,11 +283,11 @@ export function BoardExplorerSandbox() {
                         key={n}
                         type="button"
                         onClick={() => patch({ selectedNet: state.selectedNet === n ? '' : n })}
-                        className={`rounded border px-1.5 py-0.5 font-mono text-xs ${
-                          state.selectedNet === n
-                            ? 'border-transparent bg-[#ffd23f] text-black'
-                            : 'border-[var(--border)] hover:bg-[var(--bg-subtle)]'
-                        }`}
+                        className={` border px-1.5 py-0.5 font-mono text-xs ${
+ state.selectedNet === n
+ ? 'border-transparent bg-[#ffd23f] text-black'
+ : 'border-[var(--border)] hover:bg-[var(--bg-subtle)]'
+ }`}
                       >
                         {n}
                       </button>
@@ -314,7 +314,7 @@ export function BoardExplorerSandbox() {
                     key={`${p.ref}.${p.pad}-${i}`}
                     type="button"
                     onClick={() => patch({ selectedRef: p.ref })}
-                    className="block w-full rounded px-1 py-0.5 text-left hover:bg-[var(--bg-subtle)]"
+                    className="block w-full px-1 py-0.5 text-left hover:bg-[var(--bg-subtle)]"
                   >
                     {p.ref}.{p.pad}
                   </button>
@@ -330,7 +330,7 @@ export function BoardExplorerSandbox() {
                     key={n.name}
                     type="button"
                     onClick={() => patch({ selectedNet: n.name, selectedRef: '' })}
-                    className="flex w-full items-baseline justify-between rounded px-1 py-1 text-left hover:bg-[var(--bg-subtle)]"
+                    className="flex w-full items-baseline justify-between px-1 py-1 text-left hover:bg-[var(--bg-subtle)]"
                   >
                     <span className="truncate font-mono text-xs">{n.name}</span>
                     <span className="ml-2 shrink-0 text-xs text-[var(--text-muted)]">{n.pads.length}</span>
@@ -345,7 +345,7 @@ export function BoardExplorerSandbox() {
             <ol className="space-y-1 font-mono text-xs">
               {board.copperLayers.map((l) => (
                 <li key={l} className="flex items-center gap-2">
-                  <span className="inline-block h-2 w-6 rounded-sm bg-[#b87333]" />
+                  <span className="inline-block h-2 w-6 bg-[#b87333]" />
                   {l}
                 </li>
               ))}

@@ -24,7 +24,7 @@ export default function SimulatorsPage() {
         title="Simulators"
         description="Ten engineering sandboxes, built on AfriOrbit's own flight hardware and CAD. Each one settles a question that otherwise gets settled by argument. They run entirely in your browser — no account and no sign-in, and every configuration you build becomes a link you can share."
         actions={
-          <Link href="/catalog" className="text-sm text-ion-300 hover:text-ion-200">
+          <Link href="/catalog" className="text-sm text-[var(--accent)] hover:text-[var(--accent)]">
             Back to the catalogue →
           </Link>
         }
@@ -68,7 +68,7 @@ export default function SimulatorsPage() {
                   <p className="mt-3 text-sm">
                     <Link
                       href={`/learn/${usage.courseSlug}/${usage.lessonSlug}`}
-                      className="text-ion-300 hover:text-ion-200"
+                      className="text-[var(--accent)] hover:text-[var(--accent)]"
                     >
                       {`Used in ${usage.courseTitle}: ${usage.lessonTitle} \u2192`}
                     </Link>
@@ -77,7 +77,7 @@ export default function SimulatorsPage() {
                   <p className="mt-3 text-sm text-[var(--text-muted)]">
                     Not yet attached to a lesson — it is here for anyone who needs the
                     numbers.{' '}
-                    <Link href="/catalog" className="text-ion-300 hover:text-ion-200">
+                    <Link href="/catalog" className="text-[var(--accent)] hover:text-[var(--accent)]">
                       Browse the catalogue
                     </Link>
                   </p>

@@ -44,7 +44,7 @@ export function LessonSidebar({
     <nav className="space-y-5">
       <Link
         href={`/learn/${courseSlug}`}
-        className="block text-sm font-semibold hover:text-ion-300"
+        className="block text-sm font-semibold hover:text-[var(--accent)]"
       >
         ← {courseTitle}
       </Link>
@@ -65,7 +65,7 @@ export function LessonSidebar({
                     className={cn(
                       '-ml-px flex items-start gap-2 border-l-2 py-1.5 pl-3 pr-2 text-sm transition-colors',
                       isCurrent
-                        ? 'border-ion-500 bg-ion-500/8 font-medium text-ion-200'
+                        ? 'border-[var(--accent)] bg-[var(--accent-bg)] font-medium text-[var(--accent)]'
                         : 'border-transparent text-[var(--text-muted)] hover:border-[var(--border)] hover:text-[var(--text)]',
                     )}
                     aria-current={isCurrent ? 'page' : undefined}
@@ -73,7 +73,7 @@ export function LessonSidebar({
                     <span
                       className={cn(
                         'mt-0.5 text-[10px]',
-                        done.has(lesson.slug) ? 'text-signal-400' : 'text-transparent',
+                        done.has(lesson.slug) ? 'text-[var(--good)]' : 'text-transparent',
                       )}
                       aria-hidden="true"
                     >
@@ -95,7 +95,7 @@ export function LessonSidebar({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mb-2 w-full rounded-lg border border-[var(--border)] px-4 py-2 text-left text-sm lg:hidden"
+        className="mb-2 w-full border border-[var(--border)] px-4 py-2 text-left text-sm lg:hidden"
         aria-expanded={open}
       >
         {open ? 'Hide' : 'Show'} course contents

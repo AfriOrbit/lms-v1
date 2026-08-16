@@ -45,7 +45,7 @@ export default function NotFound() {
           </ButtonLink>
           <a
             href={WEBSITE_URL}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text)]"
+            className="inline-flex items-center gap-1.5 border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text)]"
           >
             {WEBSITE_LABEL}
             <span aria-hidden className="text-[0.8em]">
@@ -55,7 +55,7 @@ export default function NotFound() {
         </div>
         <p className="mt-10 text-sm text-[var(--text-muted)]">
           Verifying a certificate?{' '}
-          <Link href="/verify" className="text-ion-300 hover:underline">
+          <Link href="/verify" className="text-[var(--accent)] hover:underline">
             Enter the code here
           </Link>
           .
