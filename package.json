@@ -62,8 +62,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5"
   },
-  "description": "AfriOrbit Space learning platform \u2014 CubeSat and satellite-to-IoT engineering training",
-  "engines": {
-    "node": "22.x"
-  }
+  "description": "AfriOrbit Space learning platform \u2014 CubeSat and satellite-to-IoT engineering training"
 }
