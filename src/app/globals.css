@@ -9,22 +9,36 @@
 @import '@fontsource/ibm-plex-mono/500.css';
 
 /* ==========================================================================
-   AfriOrbit LMS — design system (Green Theme Variant)
+   AfriOrbit LMS — design system
+
+   The same grammar as afriorbit.space, applied to an application.
 
    TWO REGISTERS, AND WHICH GOES WHERE
 
    Light shell for everything a visitor can reach without signing in — home,
-   catalogue, login, certificate verification.
+   catalogue, login, certificate verification. Those pages sit next to the
+   company site in a user's mind, and arriving from it should not feel like
+   landing on a different product.
 
-   Dark Gotham/Green for the signed-in application — dashboard, lessons, labs,
-   admin.
+   Dark Gotham for the signed-in application — dashboard, lessons, labs,
+   admin. That is the instrument, and it should look like one.
+
+   This is Palantir's own split (palantir.com is light; Gotham and AIP are
+   dark), and it makes the Home ↔ Learning Hub crossing read as deliberate
+   rather than as two teams who never spoke.
 
    HOW IT IS WIRED
 
    Components name semantic tokens only — `--text`, `--border`, `--accent` —
    never a palette step. `.surface-light` and `.surface-dark` redeclare those
    tokens, so the SAME component renders correctly in either register with no
-   variant prop and no conditional class.
+   variant prop and no conditional class. The route group decides: the app and
+   admin layouts open a `.surface-dark` shell; everything else inherits light
+   from <body>.
+
+   Every foreground/background pair below is contrast-checked against WCAG AA
+   on BOTH surfaces it can appear on — the status colours in particular, since
+   a green that reads on near-black is usually invisible on white.
    ========================================================================== */
 
 @theme {
@@ -32,7 +46,7 @@
     Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Dark register — near-black surface tones. */
+  /* Dark register — near-blacks, not blue-blacks. */
   --color-void-950: #06080b;
   --color-void-900: #0a0c10;
   --color-void-850: #0f1319;
@@ -41,27 +55,30 @@
   --color-void-600: #2d3846;
   --color-void-500: #3f4c5d;
 
-  /* Green / Emerald Accent System */
-  --color-emerald-50: #ecfdf5;
-  --color-emerald-100: #d1fae5;
-  --color-emerald-200: #a7f3d0;
-  --color-emerald-300: #6ee7b7;
-  --color-emerald-400: #34d399;
-  --color-emerald-500: #10b981;
-  --color-emerald-600: #059669;
-  --color-emerald-700: #047857;
-  --color-emerald-800: #065f46;
-  --color-emerald-900: #064e3b;
+  /* Accent. Deep institutional blue on light, Gotham cyan on dark. */
+  --color-ion-50: #eef6ff;
+  --color-ion-100: #d8ebff;
+  --color-ion-200: #b4dcff;
+  --color-ion-300: #7fc8ff;
+  --color-ion-400: #4cc2ff;
+  --color-ion-500: #1f8fd6;
+  --color-ion-600: #0a6cb4;
+  --color-ion-700: #0a4fa0;
+  --color-ion-800: #08407f;
+  --color-ion-900: #06325f;
 
-  /* State Colors */
-  --color-signal-400: #3ddc97;
-  --color-signal-500: #12a06d;
-  --color-signal-600: #0b7a52;
-
+  /* Warning. The old brand orange, pulled towards amber so it reads as a
+     state rather than as decoration. */
   --color-ember-400: #f0b429;
   --color-ember-500: #c98a06;
   --color-ember-600: #9a6800;
 
+  /* Good. */
+  --color-signal-400: #3ddc97;
+  --color-signal-500: #12a06d;
+  --color-signal-600: #0b7a52;
+
+  /* Critical. */
   --color-alert-400: #ff8a8a;
   --color-alert-500: #e5484d;
   --color-alert-600: #c2181e;
@@ -83,12 +100,11 @@
   --text-muted: #4a4e55;
   --text-faint: #6c7179;
 
-  /* Green Primary Accents */
-  --accent: var(--color-emerald-700);
-  --accent-hover: var(--color-emerald-800);
+  --accent: var(--color-ion-700);
+  --accent-hover: var(--color-ion-800);
   --accent-ink: #ffffff;
-  --accent-line: color-mix(in srgb, var(--color-emerald-700) 40%, transparent);
-  --accent-bg: color-mix(in srgb, var(--color-emerald-700) 7%, transparent);
+  --accent-line: color-mix(in srgb, var(--color-ion-700) 40%, transparent);
+  --accent-bg: color-mix(in srgb, var(--color-ion-700) 6%, transparent);
 
   --good: var(--color-signal-600);
   --good-line: color-mix(in srgb, var(--color-signal-600) 38%, transparent);
@@ -119,12 +135,11 @@
   --text-muted: #9aa5b4;
   --text-faint: #7c8695;
 
-  /* Mint/Emerald Dark Accents */
-  --accent: var(--color-emerald-400);
-  --accent-hover: var(--color-emerald-300);
-  --accent-ink: var(--color-void-950);
-  --accent-line: color-mix(in srgb, var(--color-emerald-400) 40%, transparent);
-  --accent-bg: color-mix(in srgb, var(--color-emerald-400) 10%, transparent);
+  --accent: var(--color-ion-400);
+  --accent-hover: var(--color-ion-300);
+  --accent-ink: var(--color-void-900);
+  --accent-line: color-mix(in srgb, var(--color-ion-400) 40%, transparent);
+  --accent-bg: color-mix(in srgb, var(--color-ion-400) 10%, transparent);
 
   --good: var(--color-signal-400);
   --good-line: color-mix(in srgb, var(--color-signal-400) 38%, transparent);
@@ -157,6 +172,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Square, not rounded. The focus ring keeps its offset but loses the radius —
+   a rounded ring on a square control looks like a mistake. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -168,7 +185,8 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Typography
+   Type. Shared verbatim with the website so a heading is the same object on
+   both properties.
    -------------------------------------------------------------------------- */
 
 .t-display {
@@ -201,6 +219,8 @@ body {
   text-wrap: pretty;
 }
 
+/* The mono eyebrow. Only works small, wide-tracked and genuinely monospace;
+   at 14px with normal tracking it reads as a mistake rather than a label. */
 .t-label {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -211,6 +231,9 @@ body {
   color: var(--text-faint);
 }
 
+/* Proportional figures. `tabular-nums` gives every digit the width of a zero,
+   which makes a display-size number sit in a puddle of space. Tabular is for
+   columns that must align — use `.tabular` there and nowhere else. */
 .t-stat {
   font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
   line-height: 1;
@@ -223,6 +246,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* The faint instrument grid, for dark section headers. */
 .grid-field {
   position: relative;
   isolation: isolate;
@@ -343,7 +367,7 @@ body {
 }
 
 .prose-lesson blockquote {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--color-ion-500);
   padding-left: 1rem;
   color: var(--text-muted);
   font-style: italic;
@@ -366,7 +390,7 @@ body {
 }
 
 .prose-lesson th {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in srgb, var(--color-ion-500) 10%, transparent);
   font-weight: 620;
   white-space: nowrap;
 }
@@ -383,6 +407,7 @@ body {
   padding: 0.5rem 0;
 }
 
+/* Compact variant used inside quiz prompts and cards. */
 .prose-compact {
   font-size: 0.95rem;
   line-height: 1.65;
