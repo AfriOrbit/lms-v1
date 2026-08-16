@@ -11,7 +11,7 @@
  */
 
 import { SITE_PAGES, getSitePage } from '../src/content/site-pages';
-import { publicEnv } from '../src/lib/env';
+import { isUsableHttpUrl, publicEnv, publicEnvProblems } from '../src/lib/env';
 import { LMS_HOST, LMS_URL, SITE_HOST, SITE_URL, isWebsiteHost } from '../src/lib/site-config';
 
 let failed = 0;
@@ -111,6 +111,59 @@ ok('URLs are https', SITE_URL.startsWith('https://') && LMS_URL.startsWith('http
     originOf('https://gqobaozemkhcsoiecazp.supabase.co/'),
   );
   ok('an unparseable URL yields empty, not garbage', originOf('nonsense') === '');
+}
+
+/* -- present is not the same as usable ----------------------------------- */
+
+// The production failure this guards against, in full:
+//
+//   Error running the exported Web Handler:
+//   Error: Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.
+//
+// NEXT_PUBLIC_SUPABASE_URL was SET — so the emptiness check in the proxy
+// passed — but it was not a parseable http(s) URL, so the very next line threw
+// inside createServerClient. The proxy runs on every matched route, so that was
+// a 500 on every page including /setup, the page whose only job is to explain
+// this. Every value below is a real way to get that wrong.
+{
+  const rejected = [
+    'gqobaozemkhcsoiecazp.supabase.co',            // hostname copied from the address bar
+    'gqobaozemkhcsoiecazp',                        // the project ref alone
+    '"https://gqobaozemkhcsoiecazp.supabase.co"',  // quotes included in the paste
+    'https:// gqobaozemkhcsoiecazp.supabase.co',   // a space after the scheme
+    'postgresql://db.gqobaozemkhcsoiecazp.supabase.co:5432/postgres', // the DB connection string
+    'HTTPS//gqobaozemkhcsoiecazp.supabase.co',     // missing colon
+    '',
+  ];
+  const slipped = rejected.filter((v) => isUsableHttpUrl(v));
+  ok(
+    'an unusable Supabase URL is rejected before it reaches the SDK',
+    slipped.length === 0,
+    slipped.length ? `these were accepted: ${JSON.stringify(slipped)}` : `${rejected.length} paste mistakes caught`,
+  );
+
+  const accepted = [
+    'https://gqobaozemkhcsoiecazp.supabase.co',
+    'https://gqobaozemkhcsoiecazp.supabase.co/',
+    'http://localhost:54321',
+    'http://127.0.0.1:54321',
+  ];
+  const wronglyRejected = accepted.filter((v) => !isUsableHttpUrl(v));
+  ok(
+    'a legitimate Supabase URL is still accepted',
+    wronglyRejected.length === 0,
+    wronglyRejected.length ? `wrongly rejected: ${JSON.stringify(wronglyRejected)}` : 'production and local both fine',
+  );
+
+  // The property that actually matters: whatever publicEnvProblems() reports
+  // as clean must be something the SDK will accept. If this ever diverges the
+  // gate is decorative.
+  const clean = publicEnvProblems().length === 0;
+  ok(
+    'a config reported as clean yields a URL the SDK would accept',
+    !clean || isUsableHttpUrl(publicEnv.supabaseUrl),
+    clean ? publicEnv.supabaseUrl || '(none)' : 'config reports problems, nothing to assert',
+  );
 }
 
 /* -- the rewrite the proxy performs -------------------------------------- */

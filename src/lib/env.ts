@@ -105,18 +105,85 @@ export function assertPublicEnv(): void {
  * error text where someone reading a log will see it.
  */
 export function missingPublicEnv(): string[] {
-  const missing: string[] = [];
-  if (!publicEnv.supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
-  if (!publicEnv.supabaseAnonKey) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  return missing;
+  return publicEnvProblems().map((p) => p.name);
+}
+
+export interface EnvProblem {
+  name: string;
+  reason: 'absent' | 'malformed';
+  detail: string;
+}
+
+/**
+ * PRESENT IS NOT THE SAME AS USABLE, and conflating the two cost a day.
+ *
+ * This function used to test emptiness alone. A `NEXT_PUBLIC_SUPABASE_URL` set
+ * to `gqobaozemkhcsoiecazp.supabase.co` — the project reference without the
+ * scheme, which is exactly what you get by copying the hostname out of a
+ * browser address bar — is not empty, so the guard in the proxy waved it
+ * through, and the very next line handed it to `createServerClient`, which
+ * threw:
+ *
+ *     Error: Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.
+ *
+ * The proxy runs on every matched request, so that throw was a 500 on every
+ * page of the LMS. Worse, it was a 500 on `/setup` too — the one page whose
+ * entire job is to explain a configuration mistake. The diagnostic could not
+ * reach the person who needed it because the diagnostic was behind the fault.
+ *
+ * So validity is checked here, at the same gate as presence, and a malformed
+ * value is treated exactly like an absent one: redirect to /setup, which
+ * re-reads the raw value and says what is wrong with it in words.
+ */
+export function publicEnvProblems(): EnvProblem[] {
+  const problems: EnvProblem[] = [];
+
+  if (!publicEnv.supabaseUrl) {
+    problems.push({
+      name: 'NEXT_PUBLIC_SUPABASE_URL',
+      reason: 'absent',
+      detail: 'not set in this build',
+    });
+  } else if (!isUsableHttpUrl(publicEnv.supabaseUrl)) {
+    problems.push({
+      name: 'NEXT_PUBLIC_SUPABASE_URL',
+      reason: 'malformed',
+      detail: 'set, but not a valid http(s) URL — it needs the https:// scheme',
+    });
+  }
+
+  if (!publicEnv.supabaseAnonKey) {
+    problems.push({
+      name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      reason: 'absent',
+      detail: 'not set in this build',
+    });
+  }
+
+  return problems;
+}
+
+/**
+ * The same test `@supabase/supabase-js` applies internally, made explicit here
+ * so the failure happens at a gate we control rather than inside a constructor
+ * three stack frames deep in a minified chunk.
+ */
+export function isUsableHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 /** Throws with an actionable message when public Supabase config is absent. */
 export function assertSupabaseConfigured(caller: string): void {
-  const missing = missingPublicEnv();
-  if (missing.length === 0) return;
+  const problems = publicEnvProblems();
+  if (problems.length === 0) return;
+  const missing = problems.map((p) => `${p.name} (${p.detail})`);
   throw new Error(
-    `[${caller}] ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} empty in this build. ` +
+    `[${caller}] ${missing.join(' and ')}. ` +
       'These are NEXT_PUBLIC_ variables, which Next.js inlines at BUILD time — ' +
       'setting them in your hosting dashboard does nothing until you redeploy ' +
       'WITHOUT the build cache. Also confirm they are enabled for the Production ' +

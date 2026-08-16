@@ -145,7 +145,17 @@ export async function GET() {
     .filter(([k, v]) => !v.present && !OPTIONAL_BUILD_KEYS.has(k))
     .map(([k]) => k)
     .concat(runtimeOnly.SUPABASE_SERVICE_ROLE_KEY.present ? [] : ['SUPABASE_SERVICE_ROLE_KEY'])
-    .concat(runtimeOnly.IP_HASH_SALT.present ? [] : ['IP_HASH_SALT']);
+    .concat(runtimeOnly.IP_HASH_SALT.present ? [] : ['IP_HASH_SALT'])
+    /*
+     * A present-but-unparseable Supabase URL is BLOCKING, not a warning.
+     *
+     * It was a warning, and the consequence of that was this probe answering
+     * 200 while every page of the site returned 500 — because the Supabase
+     * client constructor rejects the same value this endpoint was merely
+     * tutting about. A health check that says 200 during a total outage is
+     * worse than no health check: it sends you looking somewhere else.
+     */
+    .concat(url && urlValid !== true ? ['NEXT_PUBLIC_SUPABASE_URL (present but invalid)'] : []);
 
   const anonLooksSecret = BUILD_SUPABASE_ANON.startsWith('sb_secret_');
 
@@ -214,7 +224,9 @@ export async function GET() {
       ].filter(Boolean),
 
       nextStep:
-        blocking.length > 0
+        url && urlValid !== true
+          ? `NEXT_PUBLIC_SUPABASE_URL is set but is not a usable URL (${urlValid}). It must be the full origin including the scheme — https://<project-ref>.supabase.co — not the bare hostname, not the dashboard link. Fix it, then redeploy with "Use existing Build Cache" UNTICKED.`
+          : blocking.length > 0
           ? 'Set the listed variables for the Production environment, then redeploy with "Use existing Build Cache" UNTICKED. Build-time variables do not change without a rebuild.'
           : 'Config looks complete. Next: apply migrations 0001-0010 in the Supabase SQL editor, then enable Authentication → Hooks → Customize Access Token → public.custom_access_token_hook.',
     },

@@ -186,9 +186,25 @@ export default async function SetupPage({
     },
   ];
 
-  const blocking = checks.filter((c) => c.required && !c.present);
-  const warnings = checks.filter((c) => c.present && c.problem);
-  const missingAtBuild = blocking.filter((c) => c.buildTime);
+  /*
+   * A REQUIRED VARIABLE THAT IS PRESENT BUT UNUSABLE IS BLOCKING.
+   *
+   * This read `c.required && !c.present`, and the omission had teeth. With
+   * NEXT_PUBLIC_SUPABASE_URL set to a bare hostname, this page printed the
+   * headline "Configuration looks complete", the paragraph "Every required
+   * variable is present", and — because the proxy had redirected here — the
+   * stale-build panel saying in bold "You do not need to change any values …
+   * Nothing else is wrong." Every word of that was false, and it pointed at
+   * the wrong fix. The correct diagnosis was in the table lower down, in small
+   * red text, under a headline telling the reader to ignore it.
+   *
+   * `problem` for a required variable now counts as blocking, so the summary
+   * and the detail cannot contradict each other.
+   */
+  const blocking = checks.filter((c) => c.required && (!c.present || Boolean(c.problem)));
+  const unusable = checks.filter((c) => c.required && c.present && c.problem);
+  const warnings = checks.filter((c) => c.present && c.problem && !c.required);
+  const missingAtBuild = blocking.filter((c) => c.buildTime && !c.present);
 
   /*
    * The proxy and this page run in different bundles — middleware and the Node
@@ -197,8 +213,11 @@ export default async function SetupPage({
    * either one: it is the build-time inlining problem made visible, and it is
    * the single most diagnostic thing this page can show.
    */
+  // `&& !c.problem` matters: the proxy also redirects here when a value is
+  // present but unusable, and without that clause this page would read the
+  // redirect as a bundle disagreement and confidently diagnose a stale build.
   const disagreements = reportedMissing.filter((name) =>
-    checks.some((c) => c.name === name && c.present),
+    checks.some((c) => c.name === name && c.present && !c.problem),
   );
 
   /*
@@ -280,6 +299,42 @@ export default async function SetupPage({
           ? 'The app is running, but it cannot reach Supabase. Nothing below reveals a secret value — only whether each variable arrived.'
           : 'Every required variable is present in this deployment. If pages still fail, the cause is downstream: migrations not applied, or the auth hook not enabled.'}
       </p>
+
+      {unusable.length > 0 && (
+        <div
+          style={{
+            borderLeft: '3px solid #da1e28',
+            background: '#fff1f1',
+            padding: '1rem 1.15rem',
+            margin: '0 0 2rem',
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 600 }}>
+            {unusable.length > 1 ? 'These variables are' : 'This variable is'} set, but the value
+            cannot be used.
+          </p>
+          <p style={{ margin: '.6rem 0 0' }}>
+            <strong>{unusable.map((c) => c.name).join(', ')}</strong>
+          </p>
+          {unusable.map((c) => (
+            <p key={c.name} style={{ margin: '.6rem 0 0' }}>
+              {c.problem}
+            </p>
+          ))}
+          <p style={{ margin: '.6rem 0 0' }}>
+            This is <em>not</em> a stale build and not a missing variable — the value itself is
+            wrong. Correct it in your hosting dashboard and redeploy with the build cache
+            disabled, because <code>NEXT_PUBLIC_</code> values are compiled in.
+          </p>
+          <p style={{ margin: '.6rem 0 0', color: '#525866' }}>
+            The Supabase project URL is the <strong>Project URL</strong> field under Project
+            Settings → Data API. It looks like{' '}
+            <code>https://abcdefghijklmnop.supabase.co</code> — with the scheme, no trailing
+            slash. It is not the address of the Supabase dashboard, and not the database
+            connection string.
+          </p>
+        </div>
+      )}
 
       {neverInjected.length > 0 && (
         <div

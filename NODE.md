@@ -34,3 +34,32 @@ Worth knowing, because two rounds of debugging were spent on warnings:
 A green build with a broken page means the problem is at **runtime**, not
 compile time — look at Vercel's *Runtime Logs* (not the build log), or open
 `/api/health` on the deployment.
+
+## When a page shows "Internal Server Error"
+
+A green build and a 500 page are not in conflict. The build compiles code; the
+500 happens when that code *runs*, usually because of something only present in
+production — an environment variable, a database, a network call. Build logs
+cannot show you a runtime failure, and this is the single most common wrong
+turn: reading build logs harder.
+
+The page itself now tells you where to look. Instead of a blank
+"Internal Server Error" you get **This page could not be rendered** and an
+**Error reference** — an eight-to-ten digit digest. Copy it.
+
+Then, in Vercel:
+
+    Deployments → (the deployment) → Runtime Logs      ← not "Build Logs"
+
+Search for the digest, or for `AFRIORBIT_SERVER_ERROR`. Every server-side
+failure writes one line in that form followed by the full stack:
+
+    AFRIORBIT_SERVER_ERROR {"digest":"2138189096","message":"...","path":"/dashboard",...}
+
+The `message` is the actual cause. Runtime Logs only stream while the page is
+being requested, so open the logs first, then reload the broken page in another
+tab.
+
+If nothing appears in Runtime Logs at all, the request never reached the
+application — that points at Deployment Protection, a domain pointing at a
+different project, or a proxy failure, not at the page.

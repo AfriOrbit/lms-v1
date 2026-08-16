@@ -22,6 +22,8 @@
  * Run:  npx tsx scripts/check-exports.ts
  */
 
+import { readFileSync } from 'node:fs';
+
 import * as utils from '../src/lib/utils';
 
 const REQUIRED: Record<string, string[]> = {
@@ -85,6 +87,52 @@ if (present.has('safeRedirectPath')) {
     console.error('FAIL  safeRedirectPath rejected a legitimate same-site path');
   } else {
     console.log('PASS  safeRedirectPath preserves a legitimate same-site path');
+  }
+}
+
+/* -- the observability files must not go missing -------------------------- */
+
+// These three are the difference between "Internal Server Error" and a page
+// that names the failure plus a searchable stack in the Runtime Log. They are
+// easy to lose: none of them is imported by anything, so deleting all three
+// leaves a tree that type-checks, lints and builds perfectly — and debugs like
+// it did before, which is to say not at all. Their absence has to be a test
+// failure or nothing will ever notice.
+{
+  const observability: [string, RegExp, string][] = [
+    [
+      'src/instrumentation.ts',
+      /AFRIORBIT_SERVER_ERROR/,
+      'writes the searchable marker to the Runtime Log',
+    ],
+    [
+      'src/app/error.tsx',
+      /error\.digest/,
+      'shows the visitor the digest that matches the log line',
+    ],
+    [
+      'src/app/global-error.tsx',
+      /<html/,
+      'supplies its own document, since it catches root-layout failures',
+    ],
+  ];
+
+  for (const [file, mustMatch, why] of observability) {
+    const path = new URL(`../${file}`, import.meta.url);
+    let source = '';
+    try {
+      source = readFileSync(path, 'utf8');
+    } catch {
+      failed = 1;
+      console.error(`FAIL  ${file} is missing — it ${why}`);
+      continue;
+    }
+    if (!mustMatch.test(source)) {
+      failed = 1;
+      console.error(`FAIL  ${file} no longer ${why} (expected to match ${mustMatch})`);
+    } else {
+      console.log(`PASS  ${file} present and ${why}`);
+    }
   }
 }
 

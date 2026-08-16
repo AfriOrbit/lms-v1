@@ -61,13 +61,24 @@ export default async function DashboardPage() {
   const gridEnd = new Date(today.getTime() + (6 - weekdayIndex) * DAY_MS);
   const gridStart = new Date(gridEnd.getTime() - (ACTIVITY_WEEKS * 7 - 1) * DAY_MS);
 
+  /*
+   * Every one of these results was destructured for `data` alone, with `error`
+   * discarded. Combined with the `?? []` fallbacks below, a failing query — a
+   * table that does not exist because migrations were never applied, an RLS
+   * policy denying the row, a paused project — produced a dashboard that
+   * rendered perfectly and reported zero of everything. Silent wrongness is
+   * worse than an error: nobody investigates a page that looks fine.
+   *
+   * The errors are now collected and surfaced. The fallbacks stay, so one dead
+   * query still cannot take the page down.
+   */
   const [
-    { data: enrollments },
-    { data: certificates },
-    { data: sessions },
-    { data: pulses },
-    { data: attempts },
-    { count: lessonsCompletedCount },
+    { data: enrollments, error: enrollmentsError },
+    { data: certificates, error: certificatesError },
+    { data: sessions, error: sessionsError },
+    { data: pulses, error: pulsesError },
+    { data: attempts, error: attemptsError },
+    { count: lessonsCompletedCount, error: countError },
   ] = await Promise.all([
     supabase
       .from('enrollments')
@@ -110,6 +121,21 @@ export default async function DashboardPage() {
       .eq('user_id', ctx.userId)
       .eq('completed', true),
   ]);
+
+  const queryErrors = (
+    [
+      ['enrolments', enrollmentsError],
+      ['certificates', certificatesError],
+      ['lab sessions', sessionsError],
+      ['lesson progress', pulsesError],
+      ['quiz attempts', attemptsError],
+      ['lesson count', countError],
+    ] as const
+  ).filter(([, e]) => e);
+
+  // Postgres 42P01 is "undefined_table": the schema was never applied. That has
+  // one specific fix, so it gets its own message rather than a generic one.
+  const schemaMissing = queryErrors.some(([, e]) => (e as { code?: string } | null)?.code === '42P01');
 
   const allEnrollments = enrollments ?? [];
   const allCertificates = certificates ?? [];
@@ -202,6 +228,31 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {queryErrors.length > 0 && (
+        <Alert
+          tone={schemaMissing ? 'danger' : 'warning'}
+          title={
+            schemaMissing
+              ? 'The database schema has not been applied'
+              : `${queryErrors.length} dashboard ${queryErrors.length === 1 ? 'query' : 'queries'} failed`
+          }
+        >
+          {schemaMissing ? (
+            <p>
+              Tables this page needs do not exist in the connected Supabase project. Apply the
+              migrations in <code>supabase/migrations/</code> — all twelve, in filename order — then
+              reload. Until then the figures below are zeroes, not measurements.
+            </p>
+          ) : (
+            <p>
+              Figures for {queryErrors.map(([name]) => name).join(', ')} could not be read, so they
+              are shown as zero rather than as data. This is usually a row-level security policy or a
+              paused project.
+            </p>
+          )}
+        </Alert>
+      )}
+
       <PageHeader
         eyebrow="EduSat programme"
         title={`Welcome back, ${firstName}`}

@@ -177,20 +177,58 @@ export async function proxy(request: NextRequest) {
 
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  /*
+   * The constructor is inside a try, and the check above is not redundant with
+   * it.
+   *
+   * The check above knows *why* a value is unusable and can say so. This catch
+   * knows only that something threw — but it covers the cases nobody
+   * anticipated, and in this position that matters more than the quality of
+   * the message. Anything that throws here throws on every request the proxy
+   * matches, which is every page, `/setup` included. A site whose diagnostic
+   * page is taken down by the fault it diagnoses has no way back in except
+   * reading platform logs, and the whole point of /setup is to spare someone
+   * that.
+   *
+   * `Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL` is the throw that
+   * prompted this. It should now be impossible to reach — and if some future
+   * version of the SDK finds a new reason to reject its arguments, the site
+   * degrades to a page explaining itself rather than to 500s.
+   */
+  let supabase: ReturnType<typeof createServerClient>;
+  try {
+    supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
-      },
-    },
-  });
+    });
+  } catch (error) {
+    console.error(
+      'AFRIORBIT_SERVER_ERROR [proxy] the Supabase client could not be constructed. ' +
+        'This is a configuration fault, not a code fault — see /setup.',
+      error,
+    );
+    if (pathname === '/setup') {
+      const pass = NextResponse.next({ request });
+      applySecurityHeaders(pass, request);
+      return pass;
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/setup';
+    url.search = '?missing=NEXT_PUBLIC_SUPABASE_URL';
+    const out = NextResponse.redirect(url);
+    applySecurityHeaders(out, request);
+    return out;
+  }
 
   // Verifies the JWT (locally when asymmetric keys are in use) and refreshes
   // the session when needed. Must run before any redirect so the refreshed
