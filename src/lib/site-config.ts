@@ -39,3 +39,31 @@ export function isWebsiteHost(host: string | null | undefined): boolean {
   const h = host.split(':')[0].toLowerCase();
   return h === SITE_HOST || h === `www.${SITE_HOST}`;
 }
+
+/**
+ * The marketing site, as an absolute URL — the other half of the cross-link.
+ *
+ * The LMS and the company site are two deployments. From here the only route
+ * back is the "AfriOrbit Home" button, so this address has to be correct and
+ * has to be changeable without a code edit: today it points at the vercel.app
+ * deployment, and it becomes https://afriorbit.space the day that domain is
+ * attached.
+ *
+ * `NEXT_PUBLIC_WEBSITE_URL` overrides it. A malformed value falls back rather
+ * than rendering a dead button, and check-routing.ts asserts the result is a
+ * bare https origin so a typo cannot ship quietly.
+ */
+export const WEBSITE_URL: string = (() => {
+  const fallback = 'https://afriorbit-vercel-website.vercel.app';
+  const raw = process.env.NEXT_PUBLIC_WEBSITE_URL?.trim().replace(/\/+$/, '');
+  if (!raw) return fallback;
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.origin : fallback;
+  } catch {
+    return fallback;
+  }
+})();
+
+/** Fixed by brand — this label must read identically on both properties. */
+export const WEBSITE_LABEL = 'AfriOrbit Home';

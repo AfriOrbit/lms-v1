@@ -10,9 +10,19 @@
  * Run:  npx tsx scripts/check-routing.ts
  */
 
+import { readFileSync } from 'node:fs';
+
 import { SITE_PAGES, getSitePage } from '../src/content/site-pages';
 import { isUsableHttpUrl, publicEnv, publicEnvProblems } from '../src/lib/env';
-import { LMS_HOST, LMS_URL, SITE_HOST, SITE_URL, isWebsiteHost } from '../src/lib/site-config';
+import {
+  LMS_HOST,
+  LMS_URL,
+  SITE_HOST,
+  SITE_URL,
+  WEBSITE_LABEL,
+  WEBSITE_URL,
+  isWebsiteHost,
+} from '../src/lib/site-config';
 
 let failed = 0;
 let passed = 0;
@@ -164,6 +174,43 @@ ok('URLs are https', SITE_URL.startsWith('https://') && LMS_URL.startsWith('http
     !clean || isUsableHttpUrl(publicEnv.supabaseUrl),
     clean ? publicEnv.supabaseUrl || '(none)' : 'config reports problems, nothing to assert',
   );
+}
+
+/* -- the cross-link back to the company site ----------------------------- */
+
+// The LMS and the marketing site are separate deployments, so the only route
+// between them is a hardcoded-by-default URL. A typo here is a dead button on
+// every page and nothing else in the build would notice.
+{
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(WEBSITE_URL);
+  } catch {
+    /* asserted below */
+  }
+  ok('WEBSITE_URL parses', parsed !== null, WEBSITE_URL);
+  ok('WEBSITE_URL is https', parsed?.protocol === 'https:', WEBSITE_URL);
+  ok('WEBSITE_URL is a bare origin', parsed ? WEBSITE_URL === parsed.origin : false, WEBSITE_URL);
+  ok('the home button label is the agreed wording', WEBSITE_LABEL === 'AfriOrbit Home', WEBSITE_LABEL);
+
+  // Pointing it at this deployment would make every "AfriOrbit Home" button a
+  // link to the page you are already on.
+  const host = parsed?.hostname ?? '';
+  ok('WEBSITE_URL does not point back at the LMS', host !== LMS_HOST, host);
+
+  const navSource = readFileSync(new URL('../src/components/site-nav.tsx', import.meta.url), 'utf8');
+  ok('the public header renders the home link', navSource.includes('WEBSITE_URL'));
+  // Matches an href ATTRIBUTE, not the bare string. The first version of this
+  // check searched for the hostname anywhere in the file and then failed on the
+  // comment explaining why the hostname had been removed — a check that fires
+  // on its own documentation is worse than no check, because the next person
+  // silences it.
+  ok(
+    'the footer no longer hardcodes an unserved hostname',
+    !/href=["']https:\/\/(www\.)?afriorbit\.space/.test(navSource),
+  );
+  const appLayout = readFileSync(new URL('../src/app/(app)/layout.tsx', import.meta.url), 'utf8');
+  ok('the signed-in shell renders the home link', appLayout.includes('WEBSITE_URL'));
 }
 
 /* -- the rewrite the proxy performs -------------------------------------- */

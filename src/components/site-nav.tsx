@@ -3,6 +3,29 @@ import Link from 'next/link';
 import { getSessionContext } from '@/lib/auth';
 import { publicEnv } from '@/lib/env';
 import { ButtonLink } from '@/components/ui/primitives';
+import { WEBSITE_LABEL, WEBSITE_URL } from '@/lib/site-config';
+
+/**
+ * The route back to the company site.
+ *
+ * A plain <a>, not a next/link: the target is a different deployment, and the
+ * client router would try to prefetch a foreign origin. `↗` marks it as
+ * leaving this property, which is the honest signal when the destination has a
+ * different hostname and a different visual language.
+ */
+function HomeLink({ className }: { className?: string }) {
+  return (
+    <a
+      href={WEBSITE_URL}
+      className={`group inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text)] ${className ?? ''}`}
+    >
+      {WEBSITE_LABEL}
+      <span aria-hidden className="text-[0.8em] transition-transform group-hover:translate-x-0.5">
+        ↗
+      </span>
+    </a>
+  );
+}
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -56,6 +79,7 @@ export async function SiteNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <HomeLink className="hidden sm:inline-flex" />
           {ctx ? (
             <>
               <span className="hidden text-sm text-[var(--text-muted)] sm:inline">
@@ -90,13 +114,14 @@ export function SiteFooter() {
           EduSat programme.
         </p>
         <div className="flex flex-wrap gap-5">
-          <a
-            href="https://www.afriorbit.space/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[var(--text)]"
-          >
-            afriorbit.space
+          {/*
+            This was hardcoded to https://www.afriorbit.space/ — a hostname
+            that is not yet serving the site, so the only link back to the
+            company from the LMS was dead. It now shares the single source of
+            truth with the header button.
+          */}
+          <a href={WEBSITE_URL} className="hover:text-[var(--text)]">
+            {WEBSITE_LABEL}
           </a>
           <Link href="/verify" className="hover:text-[var(--text)]">
             Verify a certificate

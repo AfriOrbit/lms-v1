@@ -15,10 +15,11 @@ export const metadata: Metadata = {
  * that are absent *at runtime in the deployed bundle*, which is a different
  * question from whether they are present in the hosting dashboard.
  *
- * It reports presence and shape only. No value is ever rendered — not even a
- * masked one for the service role key, because a length and a prefix are
- * enough to narrow a brute force and this page is unauthenticated by
- * necessity: it has to work before anything else does.
+ * No SECRET value is ever rendered — not even a masked one for the service role
+ * key, because a length and a prefix are enough to narrow a brute force and
+ * this page is unauthenticated by necessity: it has to work before anything
+ * else does. The two `NEXT_PUBLIC_` URLs are shown verbatim, which is a
+ * deliberate exception argued out at `showValue` below.
  */
 
 type Check = {
@@ -28,7 +29,39 @@ type Check = {
   buildTime: boolean;
   note: string;
   problem?: string;
+  /**
+   * The value as the running code received it — set ONLY for variables that are
+   * public by definition. See `showValue` below for why this exists and why the
+   * keys will never have it.
+   */
+  received?: string;
 };
+
+/**
+ * WHY A VALUE IS PRINTED HERE AT ALL, HAVING SAID IT NEVER WOULD BE.
+ *
+ * This page reported "not a valid URL" three times running and the variable
+ * still did not get fixed, which is not a failure of attention. The value looks
+ * perfect in the hosting dashboard, because the things that break it are
+ * invisible there: a missing scheme reads fine to a human, and a trailing
+ * newline, a smart quote or a zero-width character from a copy-paste cannot be
+ * seen at all. Being told "wrong" repeatedly without being shown *what is
+ * there* is a loop with no exit.
+ *
+ * It is only ever called for `NEXT_PUBLIC_*` variables. Those are compiled into
+ * the JavaScript bundle every visitor downloads — they are already public, and
+ * withholding them here protects nothing while costing the diagnosis. The anon
+ * key is excluded anyway: technically public, but long, and printing it invites
+ * someone to paste this screenshot into a chat thread.
+ *
+ * `JSON.stringify` does the real work. It renders a newline as \n, shows the
+ * quotes as characters if quotes were pasted in, and makes trailing spaces
+ * countable.
+ */
+function showValue(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  return JSON.stringify(raw);
+}
 
 /**
  * Whitespace inside a value is invisible in every dashboard and catastrophic in
@@ -119,6 +152,7 @@ export default async function SetupPage({
       buildTime: true,
       note: 'Supabase → Project Settings → Data API → Project URL',
       problem: whitespaceProblem(process.env.NEXT_PUBLIC_SUPABASE_URL, 'Supabase') ?? looksLikeSupabaseUrl(url),
+      received: showValue(process.env.NEXT_PUBLIC_SUPABASE_URL),
     },
     {
       name: anonVia || 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
@@ -159,8 +193,11 @@ export default async function SetupPage({
         'Optional — defaults to https:// + NEXT_PUBLIC_LMS_HOST. This means THIS app’s ' +
         'origin (the learning platform), not the marketing site’s.',
       problem: site && !/^https?:\/\/[^/]+$/.test(site)
-        ? 'Must be a bare origin like https://learn.afriorbit.space — no path, no trailing slash.'
+        ? 'Must be a bare origin like https://learn.afriorbit.space — no path, no trailing slash. ' +
+          'It is optional: the simplest fix is to DELETE this variable entirely and let it derive ' +
+          'itself from NEXT_PUBLIC_LMS_HOST.'
         : undefined,
+      received: showValue(process.env.NEXT_PUBLIC_SITE_URL),
     },
     {
       name: 'IP_HASH_SALT',
@@ -500,6 +537,25 @@ export default async function SetupPage({
                 <div style={{ color: '#6f7684', fontSize: '.9em', marginTop: '.2rem' }}>{c.note}</div>
                 {c.problem && (
                   <div style={{ color: '#da1e28', marginTop: '.35rem' }}>⚠ {c.problem}</div>
+                )}
+                {c.received && (
+                  <div style={{ marginTop: '.35rem' }}>
+                    <span style={{ color: '#6f7684' }}>Value received: </span>
+                    <code
+                      style={{
+                        background: '#f2f4f8',
+                        padding: '.1rem .3rem',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {c.received}
+                    </code>
+                    <div style={{ color: '#6f7684', fontSize: '.85em', marginTop: '.2rem' }}>
+                      Shown inside quotes and with escapes, so a stray space, a line break
+                      (<code>\n</code>) or a quote character that was pasted in is visible. This is
+                      a NEXT_PUBLIC_ value — already public in the browser bundle.
+                    </div>
+                  </div>
                 )}
               </td>
               <td style={{ ...td, whiteSpace: 'nowrap' }}>

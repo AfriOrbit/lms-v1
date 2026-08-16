@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Logo } from '@/components/site-nav';
+import { WEBSITE_LABEL, WEBSITE_URL } from '@/lib/site-config';
 import { requireUser } from '@/lib/auth';
 import { Badge } from '@/components/ui/primitives';
 
@@ -44,6 +45,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
+            {/* The route back to the company site, present for signed-in users too. */}
+            <a
+              href={WEBSITE_URL}
+              className="group hidden items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text)] sm:inline-flex"
+            >
+              {WEBSITE_LABEL}
+              <span aria-hidden className="text-[0.8em] transition-transform group-hover:translate-x-0.5">
+                ↗
+              </span>
+            </a>
             {ctx.profile.status !== 'active' ? (
               <Badge tone="warning">Pending approval</Badge>
             ) : null}
