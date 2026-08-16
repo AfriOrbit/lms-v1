@@ -78,16 +78,47 @@ reset-to-clean.ps1
 replace-repo.ps1
 ```
 
-Pushing with git handles all of it in one step, which is why it is the
-recommended route:
+### The script does all of it
+
+`sync-repo.ps1` (Windows) and `sync-repo.sh` (macOS/Linux) ship in this release.
+They clone the repository fresh, make it match this folder exactly — deletions
+included — build it, and push only if the build passed.
+
+```powershell
+# Look first. Changes nothing, prints the exact delete/add/modify list.
+powershell -ExecutionPolicy Bypass -File .\sync-repo.ps1 -Release . -DryRun
+
+# Then do it.
+powershell -ExecutionPolicy Bypass -File .\sync-repo.ps1 -Release .
+```
 
 ```bash
-git add -A          # stages deletions as well as additions
+./sync-repo.sh --release . --dry-run
+./sync-repo.sh --release .
+```
+
+Run it from inside the extracted release (`-Release .`), or pass the full path.
+
+What it guarantees:
+
+- **Nothing is lost.** It pushes a `pre-sync-<timestamp>` tag at the current
+  commit before touching anything. Any old file comes back with
+  `git show pre-sync-…:path/to/file`.
+- **Nothing broken is pushed.** It runs `npm ci` and the production build in the
+  clone first. If the build fails, GitHub is untouched and you get the real
+  error on your own machine instead of a truncated one from Vercel.
+- **No force-push.** History is preserved; this is one ordinary commit that
+  happens to delete a lot.
+
+### Or do it by hand
+
+```bash
+git add -A          # -A stages deletions as well as additions
 git commit -m "Restyle and remove the vendored marketing site"
 git push
 ```
 
-Through the web interface you have to delete each one by hand: open the folder
+Through the web interface you have to delete each path by hand: open the folder
 or file → **⋯** → **Delete directory** / **Delete file** → commit.
 
 ## 2. Vercel project settings

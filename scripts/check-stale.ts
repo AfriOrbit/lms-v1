@@ -25,7 +25,7 @@
  * Run:  npx tsx scripts/check-stale.ts
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
@@ -54,7 +54,32 @@ const REMOVED: { path: string; why: string }[] = [
   { path: 'replace-repo.ps1', why: 'superseded; the deploy path is git, not a script' },
 ];
 
-const found = REMOVED.filter((r) => existsSync(join(root, r.path)));
+/**
+ * An empty directory does not count.
+ *
+ * Git does not track directories, so removing the last file inside one leaves
+ * the folder on disk while `git status` reports everything deleted. Next.js
+ * generates no route from an empty route group, so it is harmless — and
+ * failing the build over it means a correct repository cannot deploy.
+ */
+function isStale(path: string): boolean {
+  if (!existsSync(path)) return false;
+  if (!statSync(path).isDirectory()) return true;
+  return containsAFile(path);
+}
+
+/**
+ * Recursive, because "empty" has to mean empty all the way down. Deleting the
+ * files under `src/app/(website)/www/` leaves BOTH directories behind, and a
+ * one-level check sees `(website)` containing `www` and calls it occupied.
+ */
+function containsAFile(dir: string): boolean {
+  return readdirSync(dir, { withFileTypes: true }).some((e) =>
+    e.isDirectory() ? containsAFile(join(dir, e.name)) : true,
+  );
+}
+
+const found = REMOVED.filter((r) => isStale(join(root, r.path)));
 
 if (found.length === 0) {
   console.log(`PASS  no stale files (${REMOVED.length} removed paths all absent)`);
