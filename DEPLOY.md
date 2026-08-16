@@ -45,6 +45,51 @@ After pushing, confirm `src/lib/utils.ts` and `supabase/migrations/` are both
 present in the repo. Those are the two things whose absence produces the most
 confusing errors.
 
+## 1b. Deleting is not automatic — read this if you upload rather than push
+
+**Uploading files to GitHub adds and overwrites. It never deletes.**
+
+This release removes files. If you upload the new ones on top of the old repo,
+the deleted ones stay, and the tree becomes a half-merge: new code next to old
+code that references things the new code no longer exports. The build then fails
+with a message that points at the wrong file, e.g.
+
+    Error: Export SITE_URL doesn't exist in target module
+
+which is true, and useless — the fault is not that `site-config.ts` lost an
+export, it is that a file which should have been deleted is still importing it.
+
+`npm run build` now runs `check:stale` first and says so in plain words, on
+Vercel as well as locally. But the cure is to make the repository match:
+
+**These paths must not exist in the repo.** They were removed with the
+marketing site, which is its own deployment now.
+
+```
+src/app/(website)/          ← the /www route group
+src/content/site-pages.ts
+scripts/import-site.mjs
+public/site/
+public/afriorbit-sims.js
+public/file.svg  public/globe.svg  public/next.svg
+public/vercel.svg  public/window.svg
+MIGRATION.md
+reset-to-clean.ps1
+replace-repo.ps1
+```
+
+Pushing with git handles all of it in one step, which is why it is the
+recommended route:
+
+```bash
+git add -A          # stages deletions as well as additions
+git commit -m "Restyle and remove the vendored marketing site"
+git push
+```
+
+Through the web interface you have to delete each one by hand: open the folder
+or file → **⋯** → **Delete directory** / **Delete file** → commit.
+
 ## 2. Vercel project settings
 
 | Setting | Value |
