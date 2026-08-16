@@ -30,6 +30,24 @@ type Check = {
   problem?: string;
 };
 
+/**
+ * Whitespace inside a value is invisible in every dashboard and catastrophic in
+ * one specific place: a trailing newline on the Supabase URL made `Headers.set`
+ * throw on the CSP, which 500'd every route while the build stayed green. The
+ * code now trims and re-parses so it cannot happen again, but a value with
+ * stray whitespace is still a paste error worth reporting, because the same
+ * newline will be sitting on the key too.
+ */
+function whitespaceProblem(raw: string | undefined, label: string): string | undefined {
+  if (!raw) return undefined;
+  if (raw !== raw.trim()) {
+    const kind = /[\r\n]/.test(raw) ? 'a line break' : 'leading or trailing spaces';
+    return `This value has ${kind} around it. Re-copy it — select the text precisely, or use the copy button in the ${label} dashboard rather than dragging to select.`;
+  }
+  if (/[\r\n]/.test(raw)) return 'This value contains a line break in the middle. It has been pasted wrong.';
+  return undefined;
+}
+
 function looksLikeSupabaseUrl(value: string): string | undefined {
   if (!value) return undefined;
   let url: URL;
@@ -100,7 +118,7 @@ export default async function SetupPage({
       required: true,
       buildTime: true,
       note: 'Supabase → Project Settings → Data API → Project URL',
-      problem: looksLikeSupabaseUrl(url),
+      problem: whitespaceProblem(process.env.NEXT_PUBLIC_SUPABASE_URL, 'Supabase') ?? looksLikeSupabaseUrl(url),
     },
     {
       name: anonVia || 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
@@ -111,7 +129,11 @@ export default async function SetupPage({
         'The anon / publishable key. Public by design — RLS is what protects the data. ' +
         'Either NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ' +
         '(the name the Supabase Vercel integration writes) will do.',
-      problem: looksLikeKey(anon, 'publishable'),
+      problem:
+        whitespaceProblem(
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+          'Supabase',
+        ) ?? looksLikeKey(anon, 'publishable'),
     },
     {
       name: serviceVia || 'SUPABASE_SERVICE_ROLE_KEY',
@@ -122,7 +144,11 @@ export default async function SetupPage({
         'The service_role / secret key. Bypasses RLS entirely — server only, never NEXT_PUBLIC_. ' +
         'Either SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY (the newer name, written ' +
         'by the Supabase Vercel integration) will do.',
-      problem: looksLikeKey(service, 'secret'),
+      problem:
+        whitespaceProblem(
+          process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY,
+          'Supabase',
+        ) ?? looksLikeKey(service, 'secret'),
     },
     {
       name: 'NEXT_PUBLIC_SITE_URL',

@@ -59,14 +59,29 @@ function resolveSiteUrl(): string {
  * so Next inlines both at build time — a computed lookup would silently
  * produce `undefined` in the browser.
  */
-const anonKey =
+const anonKey = (
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  '';
+  ''
+).trim();
 
 /** Safe in the browser. */
 export const publicEnv = {
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  /*
+   * TRIMMED, and that is not cosmetic.
+   *
+   * A value pasted into a hosting dashboard picks up a trailing newline more
+   * often than anyone expects. This one is interpolated into the
+   * Content-Security-Policy header, and an HTTP header value may not contain
+   * CR or LF: `Headers.set` throws `invalid header value`, the proxy throws on
+   * EVERY request, and the whole site returns 500 — while the build succeeds
+   * perfectly, because nothing is wrong at compile time.
+   *
+   * That failure cost a day of debugging. Trimming here is the cheap half of
+   * the fix; the other half is in proxy.ts, which now derives a parsed origin
+   * rather than trusting this string.
+   */
+  supabaseUrl: (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim(),
   supabaseAnonKey: anonKey,
   siteUrl: resolveSiteUrl(),
   brandName: process.env.NEXT_PUBLIC_BRAND_NAME ?? 'AfriOrbit Space',

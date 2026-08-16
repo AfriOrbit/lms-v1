@@ -77,6 +77,42 @@ ok('URLs are https', SITE_URL.startsWith('https://') && LMS_URL.startsWith('http
   );
 }
 
+/* -- no environment value may reach a header un-sanitised ---------------- */
+
+// A trailing newline on NEXT_PUBLIC_SUPABASE_URL once made `Headers.set` throw
+// on the CSP, 500ing every route while the build passed. The proxy now derives
+// `new URL(...).origin`, which cannot contain whitespace. This asserts that
+// property directly against values designed to break it.
+{
+  const hostile = [
+    'https://x.supabase.co\n',
+    'https://x.supabase.co\r\n',
+    '  https://x.supabase.co  ',
+    'https://x.supabase.co\u0000',
+    'not a url at all',
+    '',
+  ];
+  const originOf = (raw: string): string => {
+    try {
+      return new URL(raw.trim()).origin;
+    } catch {
+      return '';
+    }
+  };
+  const leaked = hostile.filter((raw) => /[\s\u0000-\u001f]/.test(originOf(raw)));
+  ok(
+    'a mangled Supabase URL never produces an unsafe header value',
+    leaked.length === 0,
+    leaked.length ? `these survived: ${JSON.stringify(leaked)}` : 'newlines, padding and control chars all neutralised',
+  );
+  ok(
+    'a well-formed URL still yields its origin',
+    originOf('https://gqobaozemkhcsoiecazp.supabase.co/') === 'https://gqobaozemkhcsoiecazp.supabase.co',
+    originOf('https://gqobaozemkhcsoiecazp.supabase.co/'),
+  );
+  ok('an unparseable URL yields empty, not garbage', originOf('nonsense') === '');
+}
+
 /* -- the rewrite the proxy performs -------------------------------------- */
 
 /** Mirrors the rewrite in src/proxy.ts. Kept in step by the checks below. */

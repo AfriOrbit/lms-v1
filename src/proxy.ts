@@ -59,6 +59,29 @@ function redirect(request: NextRequest, pathname: string, from?: string) {
 }
 
 /**
+ * The Supabase origin, as something that is safe to put in a header.
+ *
+ * Never interpolate a raw environment value into an HTTP header. A trailing
+ * newline on a pasted variable makes `Headers.set` throw `invalid header
+ * value`; because this runs in the proxy, that throw turns into a 500 on every
+ * single route while the build stays green — one of the least diagnosable
+ * failures this app can have.
+ *
+ * `new URL(...).origin` is structurally incapable of containing whitespace, so
+ * parsing and re-serialising removes the hazard rather than papering over it.
+ * If the value will not parse, the entry is simply omitted: the
+ * `https://*.supabase.co` wildcard on the same directive still covers every
+ * real project, so the policy stays correct and the site stays up.
+ */
+function supabaseOrigin(): string {
+  try {
+    return new URL(publicEnv.supabaseUrl).origin;
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Security headers for the marketing site.
  *
  * Deliberately NOT the LMS policy. The apex has no session, talks to no
@@ -270,7 +293,7 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self' data:",
-    `connect-src 'self' ${publicEnv.supabaseUrl} https://*.supabase.co wss://*.supabase.co https://api.stripe.com`,
+    `connect-src 'self' ${supabaseOrigin()} https://*.supabase.co wss://*.supabase.co https://api.stripe.com`,
     "media-src 'self' https://*.supabase.co",
     "frame-src 'self' https://js.stripe.com",
     `frame-ancestors ${frameAncestors}`,
